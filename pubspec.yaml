@@ -19,7 +19,7 @@ dependencies:
   path: ^1.9.0
 
   # SMS access
-  telephony: ^0.2.0
+  flutter_sms_inbox: ^1.0.6
   permission_handler: ^11.3.1
 
   # Date utilities

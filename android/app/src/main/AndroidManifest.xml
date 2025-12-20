@@ -2,7 +2,6 @@
 
     <!-- SMS Permissions for Fuliza tracking -->
     <uses-permission android:name="android.permission.READ_SMS"/>
-    <uses-permission android:name="android.permission.RECEIVE_SMS"/>
 
     <application
         android:label="FuliTrack"
@@ -26,16 +25,6 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-
-        <!-- SMS Broadcast Receiver for real-time Fuliza detection -->
-        <receiver
-            android:name="com.shounakmulay.telephony.sms.IncomingSmsReceiver"
-            android:permission="android.permission.BROADCAST_SMS"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.provider.Telephony.SMS_RECEIVED"/>
-            </intent-filter>
-        </receiver>
 
         <meta-data
             android:name="flutterEmbedding"

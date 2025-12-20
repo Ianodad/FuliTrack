@@ -1,11 +1,11 @@
-import 'package:telephony/telephony.dart';
+import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/models.dart';
 import 'sms_parser.dart';
 
 /// Service for accessing device SMS messages
 class SmsService {
-  final Telephony _telephony = Telephony.instance;
+  final SmsQuery _query = SmsQuery();
 
   /// Check if SMS permission is granted
   Future<bool> hasPermission() async {
@@ -31,18 +31,7 @@ class SmsService {
     }
 
     try {
-      final messages = await _telephony.getInboxSms(
-        columns: [
-          SmsColumn.ID,
-          SmsColumn.ADDRESS,
-          SmsColumn.BODY,
-          SmsColumn.DATE,
-        ],
-        sortOrder: [
-          OrderBy(SmsColumn.DATE, sort: Sort.DESC),
-        ],
-      );
-
+      final messages = await _query.getAllSms;
       return messages;
     } catch (e) {
       throw SmsReadException('Failed to read SMS: $e');
@@ -70,43 +59,12 @@ class SmsService {
     final smsDataList = mpesaSms.map((sms) {
       return SmsData(
         body: sms.body ?? '',
-        date: sms.date != null
-            ? DateTime.fromMillisecondsSinceEpoch(sms.date!)
-            : DateTime.now(),
+        date: sms.date ?? DateTime.now(),
         sender: sms.address,
       );
     }).toList();
 
     return SmsParser.parseMultiple(smsDataList);
-  }
-
-  /// Listen for new incoming SMS messages
-  void listenForIncomingSms({
-    required void Function(SmsMessage) onMessage,
-    void Function(FulizaEvent)? onFulizaEvent,
-  }) {
-    _telephony.listenIncomingSms(
-      onNewMessage: (message) {
-        onMessage(message);
-
-        // Parse and notify if it's a Fuliza message
-        if (onFulizaEvent != null && message.body != null) {
-          final result = SmsParser.parse(
-            message.body!,
-            message.date != null
-                ? DateTime.fromMillisecondsSinceEpoch(message.date!)
-                : DateTime.now(),
-          );
-
-          if (result.isFulizaMessage) {
-            for (final event in result.events) {
-              onFulizaEvent(event);
-            }
-          }
-        }
-      },
-      listenInBackground: false,
-    );
   }
 
   /// Get SMS count for debugging
