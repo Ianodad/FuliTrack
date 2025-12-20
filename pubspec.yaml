@@ -1,7 +1,7 @@
 name: fulitrack
-description: "A new Flutter project."
+description: "Privacy-first Fuliza M-PESA tracking app for Kenya"
 publish_to: 'none'
-version: 0.1.0
+version: 1.0.0+1
 
 environment:
   sdk: ^3.10.1
@@ -10,10 +10,36 @@ dependencies:
   flutter:
     sdk: flutter
 
+  # State management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # Local database
+  sqflite: ^2.3.3
+  path: ^1.9.0
+
+  # SMS access
+  flutter_sms_inbox: ^1.0.4
+  permission_handler: ^11.3.1
+
+  # Date utilities
+  intl: ^0.19.0
+
+  # UI enhancements
+  fl_chart: ^0.68.0
+
+  # Local storage for settings
+  shared_preferences: ^2.2.3
+
+  # Local notifications (optional for reminders)
+  flutter_local_notifications: ^17.2.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  riverpod_generator: ^2.4.0
+  build_runner: ^2.4.9
 
 flutter:
   uses-material-design: true
