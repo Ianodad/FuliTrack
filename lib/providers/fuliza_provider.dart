@@ -59,10 +59,28 @@ class FulizaNotifier extends StateNotifier<FulizaState> {
 
     try {
       final (start, end) = _getDateRange(state.currentFilter);
+      print('\n📊 Loading data with filter: ${state.currentFilter}');
+      print('   Date range: $start to $end');
+
       final events = start != null && end != null
           ? await _db.getEventsByDateRange(start, end)
           : await _db.getAllEvents();
       final summary = await _db.getSummary(start: start, end: end);
+
+      // Debug: Count events by type
+      final loans = events.where((e) => e.type == FulizaEventType.loan).length;
+      final interests = events.where((e) => e.type == FulizaEventType.interest).length;
+      final repayments = events.where((e) => e.type == FulizaEventType.repayment).length;
+
+      print('   📦 Loaded ${events.length} events:');
+      print('      - Loans: $loans');
+      print('      - Interests: $interests');
+      print('      - Repayments: $repayments');
+      print('   💰 Summary:');
+      print('      - Total Loaned: ${summary.totalLoaned}');
+      print('      - Total Interest: ${summary.totalInterest}');
+      print('      - Total Repaid: ${summary.totalRepaid}');
+      print('      - Outstanding: ${summary.outstandingBalance}');
 
       state = state.copyWith(
         events: events,

@@ -81,7 +81,7 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
-                    children: ['Week', 'Month', 'Year'].map((period) {
+                    children: ['Week', 'Month', 'Year', 'All'].map((period) {
                       final isSelected = _selectedPeriod == period;
                       return Expanded(
                         child: GestureDetector(
@@ -91,7 +91,9 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
                                 ? DateFilter.thisWeek
                                 : period == 'Month'
                                     ? DateFilter.thisMonth
-                                    : DateFilter.thisYear;
+                                    : period == 'Year'
+                                        ? DateFilter.thisYear
+                                        : DateFilter.allTime;
                             ref.read(fulizaProvider.notifier).setFilter(filter);
                           },
                           child: AnimatedContainer(
@@ -228,6 +230,8 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
     final interestPaid = summary.totalInterest;
     final outstanding = summary.outstandingBalance;
 
+    final subtitleText = _selectedPeriod == 'All' ? 'All time' : 'This $_selectedPeriod';
+
     return SizedBox(
       height: 120,
       child: ListView(
@@ -237,7 +241,7 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
           _SummaryCard(
             label: 'Fuliza used',
             amount: currencyFormat.format(fulizaUsed),
-            subtitle: 'This $_selectedPeriod',
+            subtitle: subtitleText,
             color: AppTheme.slate900,
           ),
           const SizedBox(width: 12),
@@ -269,7 +273,9 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
     final currencyFormat = NumberFormat.currency(symbol: 'Ksh ', decimalDigits: 2);
 
     // Format the period text
-    String periodText = 'this $_selectedPeriod'.toLowerCase();
+    String periodText = _selectedPeriod == 'All'
+        ? 'all time'
+        : 'this $_selectedPeriod'.toLowerCase();
 
     // Simple insight message based on available data
     String mainMessage;
@@ -359,6 +365,10 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
     final chartData = <double>[];
     final maxBars = 7;
 
+    // Debug: Count interest events
+    final interestEvents = events.where((e) => e.type == FulizaEventType.interest).toList();
+    debugPrint('📊 Mini chart: ${interestEvents.length} interest events in state');
+
     if (events.isEmpty) {
       // Show empty bars if no data
       for (int i = 0; i < maxBars; i++) {
@@ -371,23 +381,33 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
         DateTime periodEnd;
 
         if (_selectedPeriod == 'Week') {
-          // Last 7 weeks
-          periodEnd = now.subtract(Duration(days: i * 7));
-          periodStart = periodEnd.subtract(const Duration(days: 7));
-        } else if (_selectedPeriod == 'Year') {
-          // Last 7 months
-          periodEnd = DateTime(now.year, now.month - i, 1);
-          periodStart = DateTime(now.year, now.month - i - 1, 1);
+          // Last 7 weeks - each bar is a week
+          final weeksAgo = i;
+          periodEnd = DateTime(now.year, now.month, now.day)
+              .subtract(Duration(days: weeksAgo * 7));
+          periodStart = periodEnd.subtract(const Duration(days: 6));
+        } else if (_selectedPeriod == 'Year' || _selectedPeriod == 'All') {
+          // Last 7 months - each bar is a month (same for Year and All)
+          final targetMonth = DateTime(now.year, now.month - i, 1);
+          periodStart = DateTime(targetMonth.year, targetMonth.month, 1);
+          // End of month: first day of next month minus 1 day
+          periodEnd = DateTime(targetMonth.year, targetMonth.month + 1, 0, 23, 59, 59);
         } else {
-          // Last 7 days (default)
-          periodEnd = DateTime(now.year, now.month, now.day - i);
-          periodStart = periodEnd.subtract(const Duration(days: 1));
+          // Last 7 days (default for Month view)
+          periodStart = DateTime(now.year, now.month, now.day - i);
+          periodEnd = DateTime(now.year, now.month, now.day - i, 23, 59, 59);
         }
 
         final periodEvents = events.where((event) {
-          return event.date.isAfter(periodStart) &&
-              event.date.isBefore(periodEnd.add(const Duration(days: 1))) &&
-              event.type == FulizaEventType.interest;
+          final afterOrOnStart = event.date.isAfter(periodStart) ||
+              (event.date.year == periodStart.year &&
+                  event.date.month == periodStart.month &&
+                  event.date.day == periodStart.day);
+          final beforeOrOnEnd = event.date.isBefore(periodEnd) ||
+              (event.date.year == periodEnd.year &&
+                  event.date.month == periodEnd.month &&
+                  event.date.day == periodEnd.day);
+          return afterOrOnStart && beforeOrOnEnd && event.type == FulizaEventType.interest;
         });
 
         final totalInterest = periodEvents.fold<double>(
@@ -397,6 +417,8 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
 
         chartData.add(totalInterest);
       }
+
+      debugPrint('📊 Chart data: $chartData');
     }
 
     // Normalize heights (0 to 1)
