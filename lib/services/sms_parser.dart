@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import '../models/models.dart';
 
@@ -74,12 +75,15 @@ class SmsParser {
       return SmsParseResult.notFuliza();
     }
 
+    debugPrint('  🔍 Parsing Fuliza message...');
     final events = <FulizaEvent>[];
     final cleanMessage = _cleanMessage(message);
 
     // Try to match loan with interest pattern
+    debugPrint('  ⚡ Trying loan pattern...');
     final loanMatch = _loanWithInterestPattern.firstMatch(cleanMessage);
     if (loanMatch != null) {
+      debugPrint('  ✅ Matched loan pattern!');
       final reference = loanMatch.group(1)!;
       final loanAmount = _parseAmount(loanMatch.group(2)!);
       final interestAmount = _parseAmount(loanMatch.group(3)!);
@@ -115,8 +119,10 @@ class SmsParser {
     }
 
     // Try to match full repayment pattern
+    debugPrint('  ⚡ Trying full repayment pattern...');
     final fullRepayMatch = _fullRepaymentPattern.firstMatch(cleanMessage);
     if (fullRepayMatch != null) {
+      debugPrint('  ✅ Matched full repayment pattern!');
       final reference = fullRepayMatch.group(1)!;
       final repaymentAmount = _parseAmount(fullRepayMatch.group(2)!);
       final periodKey = FulizaEvent.generateMonthlyKey(smsDate);
@@ -135,8 +141,10 @@ class SmsParser {
     }
 
     // Try to match partial repayment pattern
+    debugPrint('  ⚡ Trying partial repayment pattern...');
     final partialRepayMatch = _partialRepaymentPattern.firstMatch(cleanMessage);
     if (partialRepayMatch != null) {
+      debugPrint('  ✅ Matched partial repayment pattern!');
       final reference = partialRepayMatch.group(1)!;
       final repaymentAmount = _parseAmount(partialRepayMatch.group(2)!);
       final outstandingAmount = partialRepayMatch.group(3) != null
@@ -163,6 +171,8 @@ class SmsParser {
 
     // Message contains Fuliza but couldn't parse it
     if (events.isEmpty) {
+      debugPrint('  ❌ No pattern matched!');
+      debugPrint('  📝 Message (cleaned): $cleanMessage');
       return SmsParseResult.error('Could not parse Fuliza message format');
     }
 

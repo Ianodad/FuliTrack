@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_sms_inbox/flutter_sms_inbox.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../models/models.dart';
@@ -27,13 +28,17 @@ class SmsService {
   /// Fetch all SMS messages from device
   Future<List<SmsMessage>> getAllSms() async {
     if (!await hasPermission()) {
+      debugPrint('❌ SMS permission not granted');
       throw SmsPermissionException('SMS permission not granted');
     }
 
     try {
+      debugPrint('📱 Reading all SMS messages...');
       final messages = await _query.getAllSms;
+      debugPrint('✅ Found ${messages.length} total SMS messages');
       return messages;
     } catch (e) {
+      debugPrint('❌ Failed to read SMS: $e');
       throw SmsReadException('Failed to read SMS: $e');
     }
   }
@@ -42,7 +47,8 @@ class SmsService {
   Future<List<SmsMessage>> getMpesaSms() async {
     final allSms = await getAllSms();
 
-    return allSms.where((sms) {
+    debugPrint('🔍 Filtering for M-PESA messages...');
+    final mpesaMessages = allSms.where((sms) {
       final sender = (sms.address ?? '').toUpperCase();
       // M-PESA messages typically come from these senders
       return sender.contains('MPESA') ||
@@ -50,21 +56,73 @@ class SmsService {
           sender.contains('SAFARICOM') ||
           sender == 'MPESA';
     }).toList();
+
+    debugPrint('✅ Found ${mpesaMessages.length} M-PESA messages');
+
+    // Print first few senders for debugging
+    if (mpesaMessages.isNotEmpty) {
+      final senders = mpesaMessages
+          .take(5)
+          .map((sms) => sms.address ?? 'Unknown')
+          .toSet()
+          .join(', ');
+      debugPrint('📬 M-PESA senders: $senders');
+    }
+
+    return mpesaMessages;
   }
 
   /// Fetch and parse Fuliza-specific messages
   Future<List<FulizaEvent>> getFulizaEvents() async {
+    debugPrint('\n🔎 Starting Fuliza event extraction...');
     final mpesaSms = await getMpesaSms();
 
-    final smsDataList = mpesaSms.map((sms) {
-      return SmsData(
-        body: sms.body ?? '',
-        date: sms.date ?? DateTime.now(),
-        sender: sms.address,
-      );
-    }).toList();
+    // Filter Fuliza messages
+    int fulizaCount = 0;
+    final smsDataList = <SmsData>[];
 
-    return SmsParser.parseMultiple(smsDataList);
+    for (final sms in mpesaSms) {
+      final body = sms.body ?? '';
+      if (SmsParser.isFulizaMessage(body)) {
+        fulizaCount++;
+        smsDataList.add(SmsData(
+          body: body,
+          date: sms.date ?? DateTime.now(),
+          sender: sms.address,
+        ));
+
+        // Print first Fuliza message for debugging
+        if (fulizaCount == 1) {
+          debugPrint('📋 Sample Fuliza message:');
+          debugPrint('   From: ${sms.address}');
+          debugPrint('   Date: ${sms.date}');
+          debugPrint('   Body: ${body.substring(0, body.length > 100 ? 100 : body.length)}...');
+        }
+      }
+    }
+
+    debugPrint('✅ Found $fulizaCount Fuliza messages');
+
+    if (smsDataList.isEmpty) {
+      debugPrint('⚠️  No Fuliza messages found to parse');
+      return [];
+    }
+
+    debugPrint('🔄 Parsing Fuliza messages...');
+    final events = SmsParser.parseMultiple(smsDataList);
+    debugPrint('✅ Parsed ${events.length} Fuliza events');
+
+    if (events.isNotEmpty) {
+      debugPrint('📊 Event types:');
+      final loans = events.where((e) => e.type == FulizaEventType.loan).length;
+      final repayments = events.where((e) => e.type == FulizaEventType.repayment).length;
+      final interests = events.where((e) => e.type == FulizaEventType.interest).length;
+      debugPrint('   - Loans: $loans');
+      debugPrint('   - Repayments: $repayments');
+      debugPrint('   - Interest: $interests');
+    }
+
+    return events;
   }
 
   /// Get SMS count for debugging

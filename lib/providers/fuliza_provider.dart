@@ -79,32 +79,55 @@ class FulizaNotifier extends StateNotifier<FulizaState> {
 
   /// Sync SMS messages from device
   Future<int> syncFromSms() async {
+    print('\n========================================');
+    print('🚀 STARTING SMS SYNC');
+    print('========================================\n');
+
     state = state.copyWith(isLoading: true, error: null);
 
     try {
       // Check permission
+      print('🔐 Checking SMS permission...');
       if (!await _smsService.hasPermission()) {
+        print('⚠️  Permission not granted, requesting...');
         final granted = await _smsService.requestPermission();
         if (!granted) {
+          print('❌ SMS permission denied by user');
           state = state.copyWith(
             isLoading: false,
             error: 'SMS permission denied',
           );
           return 0;
         }
+        print('✅ Permission granted!');
+      } else {
+        print('✅ SMS permission already granted');
       }
 
       // Fetch and parse SMS
+      print('\n📱 Fetching Fuliza events from SMS...');
       final events = await _smsService.getFulizaEvents();
 
       // Insert new events (duplicates are ignored)
+      print('\n💾 Inserting ${events.length} events into database...');
       await _db.insertEvents(events);
 
       // Reload data
+      print('🔄 Reloading data...');
       await loadData();
 
+      print('\n========================================');
+      print('✅ SMS SYNC COMPLETED: ${events.length} events');
+      print('========================================\n');
+
       return events.length;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('\n========================================');
+      print('❌ SMS SYNC FAILED');
+      print('Error: $e');
+      print('Stack trace: $stackTrace');
+      print('========================================\n');
+
       state = state.copyWith(
         isLoading: false,
         error: 'Failed to sync SMS: $e',
