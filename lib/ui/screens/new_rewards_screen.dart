@@ -9,7 +9,7 @@ class NewRewardsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final rewardsAsync = ref.watch(rewardsProvider);
+    final rewards = ref.watch(rewardProvider).rewards;
 
     return Scaffold(
       backgroundColor: AppTheme.slate50,
@@ -52,11 +52,7 @@ class NewRewardsScreen extends ConsumerWidget {
               const SizedBox(height: 12),
 
               // Badge Grid
-              rewardsAsync.when(
-                data: (rewards) => _buildBadgeGrid(rewards),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (_, __) => _buildBadgeGrid([]),
-              ),
+              _buildBadgeGrid(rewards),
             ],
           ),
         ),

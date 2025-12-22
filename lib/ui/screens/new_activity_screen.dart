@@ -19,7 +19,7 @@ class _NewActivityScreenState extends ConsumerState<NewActivityScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final eventsAsync = ref.watch(allEventsProvider);
+    final events = ref.watch(fulizaProvider).events;
 
     return Scaffold(
       backgroundColor: AppTheme.slate50,
@@ -78,41 +78,32 @@ class _NewActivityScreenState extends ConsumerState<NewActivityScreen> {
 
             // Transaction List
             Expanded(
-              child: eventsAsync.when(
-                data: (events) {
-                  final filtered = _filterEvents(events);
-                  if (filtered.isEmpty) {
-                    return const Center(
-                      child: Text(
-                        'No transactions found',
-                        style: TextStyle(color: AppTheme.slate400),
-                      ),
-                    );
-                  }
-                  return ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: filtered.length,
-                    separatorBuilder: (_, __) => const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      final event = filtered[index];
-                      return _TransactionCard(
-                        event: event,
-                        isExpanded: _expandedId == event.id,
-                        onTap: () => setState(() {
-                          _expandedId = _expandedId == event.id ? null : event.id;
-                        }),
-                      );
-                    },
+              child: () {
+                final filtered = _filterEvents(events);
+                if (filtered.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No transactions found',
+                      style: TextStyle(color: AppTheme.slate400),
+                    ),
                   );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (_, __) => const Center(
-                  child: Text(
-                    'Failed to load transactions',
-                    style: TextStyle(color: AppTheme.errorRed),
-                  ),
-                ),
-              ),
+                }
+                return ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: filtered.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (context, index) {
+                    final event = filtered[index];
+                    return _TransactionCard(
+                      event: event,
+                      isExpanded: _expandedId == event.id,
+                      onTap: () => setState(() {
+                        _expandedId = _expandedId == event.id ? null : event.id;
+                      }),
+                    );
+                  },
+                );
+              }(),
             ),
           ],
         ),

@@ -163,7 +163,7 @@ class AppTheme {
       case 'consistency':
         return consistencyColor;
       default:
-        return primaryGreen;
+        return primaryTeal;
     }
   }
 }

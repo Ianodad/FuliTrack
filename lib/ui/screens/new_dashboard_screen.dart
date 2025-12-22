@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../../providers/providers.dart';
+import '../../models/models.dart';
 
 /// Dashboard screen with summary cards and insights
 class NewDashboardScreen extends ConsumerStatefulWidget {
@@ -17,7 +18,7 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final summary = ref.watch(currentMonthSummaryProvider);
+    final summary = ref.watch(fulizaSummaryProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.slate50,
@@ -60,11 +61,7 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
               ),
 
               // Summary Cards
-              summary.when(
-                data: (data) => _buildSummaryCards(data),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (_, __) => _buildSummaryCards(null),
-              ),
+              _buildSummaryCards(summary),
 
               const SizedBox(height: 24),
 
@@ -119,11 +116,7 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
               const SizedBox(height: 24),
 
               // Insight Card
-              summary.when(
-                data: (data) => _buildInsightCard(data),
-                loading: () => const SizedBox(),
-                error: (_, __) => const SizedBox(),
-              ),
+              _buildInsightCard(summary),
 
               const SizedBox(height: 24),
 
@@ -155,12 +148,12 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
     );
   }
 
-  Widget _buildSummaryCards(dynamic data) {
+  Widget _buildSummaryCards(FulizaSummary summary) {
     final currencyFormat = NumberFormat.currency(symbol: 'Ksh ', decimalDigits: 2);
 
-    final fulizaUsed = data?.totalLoans ?? 1812.51;
-    final interestPaid = data?.totalInterest ?? 18.14;
-    final outstanding = data?.currentBalance ?? 145.30;
+    final fulizaUsed = summary.totalLoaned > 0 ? summary.totalLoaned : 1812.51;
+    final interestPaid = summary.totalInterest > 0 ? summary.totalInterest : 18.14;
+    final outstanding = summary.outstandingBalance > 0 ? summary.outstandingBalance : 145.30;
 
     return SizedBox(
       height: 120,
@@ -194,7 +187,7 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
     );
   }
 
-  Widget _buildInsightCard(dynamic data) {
+  Widget _buildInsightCard(FulizaSummary summary) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Container(
