@@ -3,8 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'ui/theme/app_theme.dart';
-import 'ui/home_screen.dart';
 import 'ui/screens/screens.dart';
+import 'ui/screens/permission_screen.dart';
+import 'ui/screens/new_home_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -52,6 +53,7 @@ class AppWrapper extends StatefulWidget {
 
 class _AppWrapperState extends State<AppWrapper> {
   bool? _hasCompletedOnboarding;
+  bool? _hasGrantedPermission;
 
   @override
   void initState() {
@@ -61,8 +63,12 @@ class _AppWrapperState extends State<AppWrapper> {
 
   Future<void> _checkOnboarding() async {
     final prefs = await SharedPreferences.getInstance();
-    final completed = prefs.getBool('onboarding_completed') ?? false;
-    setState(() => _hasCompletedOnboarding = completed);
+    final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
+    final permissionGranted = prefs.getBool('permission_granted') ?? false;
+    setState(() {
+      _hasCompletedOnboarding = onboardingCompleted;
+      _hasGrantedPermission = permissionGranted;
+    });
   }
 
   Future<void> _completeOnboarding() async {
@@ -71,9 +77,15 @@ class _AppWrapperState extends State<AppWrapper> {
     setState(() => _hasCompletedOnboarding = true);
   }
 
+  Future<void> _completePermission() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('permission_granted', true);
+    setState(() => _hasGrantedPermission = true);
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (_hasCompletedOnboarding == null) {
+    if (_hasCompletedOnboarding == null || _hasGrantedPermission == null) {
       // Loading state
       return const Scaffold(
         body: Center(
@@ -88,6 +100,12 @@ class _AppWrapperState extends State<AppWrapper> {
       );
     }
 
-    return const HomeScreen();
+    if (_hasGrantedPermission == false) {
+      return PermissionScreen(
+        onGranted: _completePermission,
+      );
+    }
+
+    return const NewHomeScreen();
   }
 }
