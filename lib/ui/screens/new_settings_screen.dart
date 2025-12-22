@@ -311,10 +311,26 @@ class NewSettingsScreen extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      // TODO: Trigger SMS re-scan
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Re-scanning SMS messages...')),
       );
+
+      try {
+        final notifier = ref.read(fulizaProvider.notifier);
+        final count = await notifier.syncFromSms();
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Found $count Fuliza transactions')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString()}')),
+          );
+        }
+      }
     }
   }
 
@@ -342,10 +358,22 @@ class NewSettingsScreen extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      // TODO: Clear all data
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('All data cleared')),
-      );
+      try {
+        final notifier = ref.read(fulizaProvider.notifier);
+        await notifier.deleteAllData();
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('All data cleared successfully')),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error: ${e.toString()}')),
+          );
+        }
+      }
     }
   }
 }
