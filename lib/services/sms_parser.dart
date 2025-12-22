@@ -31,10 +31,11 @@ class SmsParseResult {
 class SmsParser {
   // Regex patterns for different Fuliza SMS formats
 
-  // Pattern 1: Fuliza loan with interest
+  // Pattern 1: Fuliza loan with interest/access fee
   // "SD38YVVQ1A Confirmed. Fuliza M-PESA amount is Ksh 1443.39. Interest charged Ksh 14.44. Total Fuliza M-PESA outstanding amount is Ksh 1457.83 due on 03/05/24."
+  // "TKBBB9V6KD Confirmed. Fuliza M-PESA amount is Ksh 39.00. Access Fee charged Ksh 0.39. Total Fuliza M-PESA outstanding amount is Ksh 5862.40 due on 08/12/25."
   static final RegExp _loanWithInterestPattern = RegExp(
-    r'([A-Z0-9]{10})\s+Confirmed\.\s*Fuliza M-PESA amount is Ksh\s*([\d,]+\.?\d*)\.\s*Interest charged Ksh\s*([\d,]+\.?\d*)\.\s*Total Fuliza M-PESA outstanding amount is Ksh\s*([\d,]+\.?\d*)\s*due on\s*(\d{2}/\d{2}/\d{2})',
+    r'([A-Z0-9]{10})\s+Confirmed\.\s*Fuliza M-PESA amount is Ksh\s*([\d,]+\.?\d*)\.\s*(?:Interest|Access Fee) charged Ksh\s*([\d,]+\.?\d*)\.\s*Total Fuliza M-PESA outstanding amount is Ksh\s*([\d,]+\.?\d*)\s*due on\s*(\d{2}/\d{2}/\d{2})',
     caseSensitive: false,
     multiLine: true,
   );
