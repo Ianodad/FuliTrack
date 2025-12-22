@@ -64,8 +64,41 @@ class SmsParser {
   /// Check if a message is from M-PESA/Safaricom about Fuliza
   static bool isFulizaMessage(String message) {
     final lowerMessage = message.toLowerCase();
-    return lowerMessage.contains('fuliza') &&
-        (lowerMessage.contains('m-pesa') || lowerMessage.contains('mpesa'));
+
+    // Must contain 'fuliza' and 'm-pesa'
+    if (!lowerMessage.contains('fuliza')) return false;
+    if (!lowerMessage.contains('m-pesa') && !lowerMessage.contains('mpesa')) {
+      return false;
+    }
+
+    // Exclude promotional/informational messages that just mention Fuliza
+    // These are NOT actual Fuliza transactions
+    final exclusions = [
+      'dial *234', // "Dial *234*0# to check your FULIZA LIMIT"
+      'to register for fuliza', // "To register for Fuliza dial *234#"
+      'opted into fuliza', // "you have successfully opted into Fuliza M-PESA"
+      'opted out of fuliza', // "You have successfully Opted Out of Fuliza M-PESA"
+      'withdraw your fuliza limit', // "Withdraw your Fuliza limit at any M-Pesa agent"
+      'to use fuliza', // "To use Fuliza, transact normally"
+      'available fuliza m-pesa limit ksh', // Just showing limit
+      'insufficient funds', // Failed transactions
+    ];
+
+    for (final exclusion in exclusions) {
+      if (lowerMessage.contains(exclusion)) {
+        return false;
+      }
+    }
+
+    // Must contain transaction-specific keywords
+    final transactionKeywords = [
+      'fuliza m-pesa amount is', // Loan transaction
+      'to fully pay your outstanding fuliza', // Full repayment
+      'to partially pay your', // Partial repayment
+      'fuliza m-pesa outstanding amount', // Loan with outstanding
+    ];
+
+    return transactionKeywords.any((keyword) => lowerMessage.contains(keyword));
   }
 
   /// Parse an SMS message and extract Fuliza events
