@@ -34,8 +34,9 @@ class SmsParser {
   // Pattern 1: Fuliza loan with interest/access fee
   // "SD38YVVQ1A Confirmed. Fuliza M-PESA amount is Ksh 1443.39. Interest charged Ksh 14.44. Total Fuliza M-PESA outstanding amount is Ksh 1457.83 due on 03/05/24."
   // "TKBBB9V6KD Confirmed. Fuliza M-PESA amount is Ksh 39.00. Access Fee charged Ksh 0.39. Total Fuliza M-PESA outstanding amount is Ksh 5862.40 due on 08/12/25."
+  // "TD58I1W15G Confirmed. Fuliza M-PESA amount is Ksh 1092.86. Interest charged Ksh 10.93. Total Fuliza M-PESA outstanding amount is Ksh 1103.79 due on 05/05Transaction cost, Ksh0.00."
   static final RegExp _loanWithInterestPattern = RegExp(
-    r'([A-Z0-9]{10})\s+Confirmed\.\s*Fuliza M-PESA amount is Ksh\s*([\d,]+\.?\d*)\.\s*(?:Interest|Access Fee) charged Ksh\s*([\d,]+\.?\d*)\.\s*Total Fuliza M-PESA outstanding amount is Ksh\s*([\d,]+\.?\d*)\s*due on\s*(\d{2}/\d{2}/\d{2})',
+    r'([A-Z0-9]{10})\s+Confirmed\.\s*Fuliza M-PESA amount is Ksh\s*([\d,]+\.?\d*)\.\s*(?:Interest|Access Fee) charged Ksh\s*([\d,]+\.?\d*)\.\s*Total Fuliza M-PESA outstanding amount is Ksh\s*([\d,]+\.?\d*)\s*due on\s*(\d{2}/\d{2}(?:/\d{2})?)',
     caseSensitive: false,
     multiLine: true,
   );
@@ -122,7 +123,7 @@ class SmsParser {
       final loanAmount = _parseAmount(loanMatch.group(2)!);
       final interestAmount = _parseAmount(loanMatch.group(3)!);
       final outstandingAmount = _parseAmount(loanMatch.group(4)!);
-      final dueDate = _parseDate(loanMatch.group(5)!);
+      final dueDate = _parseDate(loanMatch.group(5)!, smsDate);
       final periodKey = FulizaEvent.generateMonthlyKey(smsDate);
 
       // Add loan event
@@ -185,7 +186,7 @@ class SmsParser {
           ? _parseAmount(partialRepayMatch.group(3)!)
           : null;
       final dueDate = partialRepayMatch.group(4) != null
-          ? _parseDate(partialRepayMatch.group(4)!)
+          ? _parseDate(partialRepayMatch.group(4)!, smsDate)
           : null;
       final periodKey = FulizaEvent.generateMonthlyKey(smsDate);
 
@@ -227,18 +228,25 @@ class SmsParser {
     return double.tryParse(cleaned) ?? 0.0;
   }
 
-  /// Parse date string in DD/MM/YY format
-  static DateTime? _parseDate(String dateStr) {
+  /// Parse date string in DD/MM/YY or DD/MM format
+  /// If year is missing, uses the year from smsDate
+  static DateTime? _parseDate(String dateStr, [DateTime? smsDate]) {
     try {
       final parts = dateStr.split('/');
-      if (parts.length == 3) {
+      if (parts.length >= 2) {
         final day = int.parse(parts[0]);
         final month = int.parse(parts[1]);
-        var year = int.parse(parts[2]);
-        // Convert 2-digit year to 4-digit
-        if (year < 100) {
-          year += 2000;
+        var year = smsDate?.year ?? DateTime.now().year;
+
+        // If year is provided in the date string, use it
+        if (parts.length == 3) {
+          year = int.parse(parts[2]);
+          // Convert 2-digit year to 4-digit
+          if (year < 100) {
+            year += 2000;
+          }
         }
+
         return DateTime(year, month, day);
       }
     } catch (e) {
