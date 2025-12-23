@@ -13,6 +13,8 @@ class FulizaState {
   final DateTime? customStartDate;
   final DateTime? customEndDate;
   final int totalEventCount; // Total events in DB (regardless of filter)
+  final FulizaLimit? currentLimit; // Latest Fuliza limit
+  final List<FulizaLimit> limitIncreases; // History of limit increases
 
   FulizaState({
     this.events = const [],
@@ -23,6 +25,8 @@ class FulizaState {
     this.customStartDate,
     this.customEndDate,
     this.totalEventCount = 0,
+    this.currentLimit,
+    this.limitIncreases = const [],
   }) : summary = summary ?? FulizaSummary.empty();
 
   FulizaState copyWith({
@@ -34,6 +38,8 @@ class FulizaState {
     DateTime? customStartDate,
     DateTime? customEndDate,
     int? totalEventCount,
+    FulizaLimit? currentLimit,
+    List<FulizaLimit>? limitIncreases,
   }) {
     return FulizaState(
       events: events ?? this.events,
@@ -44,6 +50,8 @@ class FulizaState {
       customStartDate: customStartDate ?? this.customStartDate,
       customEndDate: customEndDate ?? this.customEndDate,
       totalEventCount: totalEventCount ?? this.totalEventCount,
+      currentLimit: currentLimit ?? this.currentLimit,
+      limitIncreases: limitIncreases ?? this.limitIncreases,
     );
   }
 }
@@ -90,11 +98,22 @@ class FulizaNotifier extends StateNotifier<FulizaState> {
       print('      - Total Repaid: ${summary.totalRepaid}');
       print('      - Outstanding: ${summary.outstandingBalance}');
 
+      // Load limit data
+      final currentLimit = await _db.getLatestLimit();
+      final limitIncreases = await _db.getLimitIncreases();
+
+      if (currentLimit != null) {
+        print('   💳 Current Limit: Ksh ${currentLimit.limit}');
+        print('   📈 Limit Increases: ${limitIncreases.length}');
+      }
+
       state = state.copyWith(
         events: events,
         summary: summary,
         isLoading: false,
         totalEventCount: totalCount,
+        currentLimit: currentLimit,
+        limitIncreases: limitIncreases,
       );
     } catch (e) {
       state = state.copyWith(
@@ -154,6 +173,16 @@ class FulizaNotifier extends StateNotifier<FulizaState> {
       final countAfter = await _db.getEventCount();
       print('📊 Events in database AFTER insert: $countAfter');
       print('   New events added: ${countAfter - countBefore}');
+
+      // Also fetch and insert limit data
+      print('\n📱 Fetching Fuliza limits from SMS...');
+      final limits = await _smsService.getFulizaLimits();
+      if (limits.isNotEmpty) {
+        final limitCountBefore = await _db.getLimitCount();
+        await _db.insertLimits(limits);
+        final limitCountAfter = await _db.getLimitCount();
+        print('💳 Limits: Parsed ${limits.length}, Added ${limitCountAfter - limitCountBefore}');
+      }
 
       // Reload data with current filter
       print('\n🔄 Reloading data with filter: ${state.currentFilter}');
@@ -281,4 +310,14 @@ final fulizaLoadingProvider = Provider<bool>((ref) {
 /// Provider for current filter
 final fulizaFilterProvider = Provider<DateFilter>((ref) {
   return ref.watch(fulizaProvider).currentFilter;
+});
+
+/// Provider for current Fuliza limit
+final fulizaLimitProvider = Provider<FulizaLimit?>((ref) {
+  return ref.watch(fulizaProvider).currentLimit;
+});
+
+/// Provider for limit increases history
+final fulizaLimitIncreasesProvider = Provider<List<FulizaLimit>>((ref) {
+  return ref.watch(fulizaProvider).limitIncreases;
 });

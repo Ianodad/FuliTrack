@@ -80,6 +80,11 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
                           ),
                         ),
 
+                        // Fuliza Limit Card
+                        _buildLimitCard(),
+
+                        const SizedBox(height: 16),
+
                         // Summary Cards
                         _buildSummaryCards(summary, _selectedPeriod),
 
@@ -233,6 +238,220 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildLimitCard() {
+    final currentLimit = ref.watch(fulizaLimitProvider);
+    final limitIncreases = ref.watch(fulizaLimitIncreasesProvider);
+    final currencyFormat = NumberFormat.currency(symbol: 'Ksh ', decimalDigits: 0);
+
+    if (currentLimit == null) {
+      return const SizedBox.shrink();
+    }
+
+    // Get last increase info
+    String increaseInfo = '';
+    if (limitIncreases.isNotEmpty) {
+      final lastIncrease = limitIncreases.last;
+      if (lastIncrease.previousLimit != null && lastIncrease.previousLimit! > 0) {
+        final increase = lastIncrease.limit - lastIncrease.previousLimit!;
+        if (increase > 0) {
+          increaseInfo = '+${currencyFormat.format(increase)}';
+        }
+      }
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppTheme.slate800, AppTheme.slate900],
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.credit_card,
+                color: Colors.white,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Fuliza Limit',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white70,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    currencyFormat.format(currentLimit.limit),
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (increaseInfo.isNotEmpty)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppTheme.successGreen.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.trending_up,
+                      color: AppTheme.successGreen,
+                      size: 14,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      increaseInfo,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.successGreen,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            if (limitIncreases.length > 1)
+              Padding(
+                padding: const EdgeInsets.only(left: 8),
+                child: GestureDetector(
+                  onTap: () => _showLimitHistory(limitIncreases),
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.history,
+                      color: Colors.white70,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showLimitHistory(List<FulizaLimit> increases) {
+    final currencyFormat = NumberFormat.currency(symbol: 'Ksh ', decimalDigits: 0);
+    final dateFormat = DateFormat('MMM yyyy');
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Limit History',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.slate800,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '${increases.length} limit increases',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppTheme.slate500,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ...increases.reversed.take(5).map((limit) {
+                final increase = limit.previousLimit != null
+                    ? limit.limit - limit.previousLimit!
+                    : 0.0;
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryTeal,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              currencyFormat.format(limit.limit),
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                color: AppTheme.slate800,
+                              ),
+                            ),
+                            Text(
+                              dateFormat.format(limit.date),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.slate500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (increase > 0)
+                        Text(
+                          '+${currencyFormat.format(increase)}',
+                          style: const TextStyle(
+                            color: AppTheme.successGreen,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
+        );
+      },
     );
   }
 

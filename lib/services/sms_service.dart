@@ -144,6 +144,39 @@ class SmsService {
 
     return count;
   }
+
+  /// Fetch and parse Fuliza limit messages
+  Future<List<FulizaLimit>> getFulizaLimits() async {
+    debugPrint('\n🔎 Starting Fuliza limit extraction...');
+    final mpesaSms = await getMpesaSms();
+
+    // Convert to SmsData for parsing
+    final smsDataList = mpesaSms.map((sms) => SmsData(
+      body: sms.body ?? '',
+      date: sms.date ?? DateTime.now(),
+      sender: sms.address,
+    )).toList();
+
+    // Parse limit messages
+    final limits = FulizaLimitParser.parseMultiple(smsDataList);
+
+    if (limits.isNotEmpty) {
+      debugPrint('📊 Limit types:');
+      final increases = limits.where((l) => l.type == FulizaLimitType.increase).length;
+      final fullPayments = limits.where((l) => l.type == FulizaLimitType.fullPayment).length;
+      final partialPayments = limits.where((l) => l.type == FulizaLimitType.partialPayment).length;
+      debugPrint('   - Increases: $increases');
+      debugPrint('   - Full Payments: $fullPayments');
+      debugPrint('   - Partial Payments: $partialPayments');
+
+      final latest = FulizaLimitParser.getLatestLimit(limits);
+      if (latest != null) {
+        debugPrint('💳 Current limit: Ksh ${latest.limit}');
+      }
+    }
+
+    return limits;
+  }
 }
 
 /// Exception thrown when SMS permission is not granted

@@ -289,3 +289,185 @@ class SmsData {
     this.sender,
   });
 }
+
+/// Service for parsing Fuliza limit messages
+class FulizaLimitParser {
+  // Pattern 1: Limit increase notification from Safaricom
+  // "Dear IAN, your Fuliza M-PESA limit is KSH 8000.00. Keep using M-PESA to grow your limit."
+  static final RegExp _limitIncreasePattern = RegExp(
+    r'Dear\s+\w+,\s+your\s+Fuliza\s+M-PESA\s+limit\s+is\s+KSH?\s*([\d,]+\.?\d*)\.\s*Keep\s+using\s+M-PESA\s+to\s+grow\s+your\s+limit',
+    caseSensitive: false,
+  );
+
+  // Pattern 2: Limit shown after full payment
+  // "TKTBBI22A Confirmed. Ksh 1432.10 from your M-PESA has been used to fully pay your outstanding Fuliza M-PESA. Available Fuliza M-PESA limit is Ksh 8000.00."
+  static final RegExp _fullPaymentLimitPattern = RegExp(
+    r'([A-Z0-9]{10})\s+Confirmed\.\s*Ksh\s*([\d,]+\.?\d*)\s*from your M-PESA has been used to fully pay.*?(?:Available Fuliza M-PESA limit is|Your available Fuliza M-PESA limit is)\s*Ksh\s*([\d,]+\.?\d*)',
+    caseSensitive: false,
+    multiLine: true,
+  );
+
+  // Pattern 3: Limit shown after partial payment
+  // "SFF9LYPELJ Confirmed. Ksh 2000.00 from your M-PESA has been used to partially pay your outstanding Fuliza M-PESA. Your available Fuliza M-PESA limit is Ksh 2856.17."
+  static final RegExp _partialPaymentLimitPattern = RegExp(
+    r'([A-Z0-9]{10})\s+Confirmed\.\s*Ksh\s*([\d,]+\.?\d*)\s*from your M-PESA has been used to partially pay.*?(?:Available Fuliza M-PESA limit is|Your available Fuliza M-PESA limit is)\s*Ksh\s*([\d,]+\.?\d*)',
+    caseSensitive: false,
+    multiLine: true,
+  );
+
+  // Pattern 4: Opt-in message
+  // "Dear IAN, you have successfully opted into Fuliza M-PESA. Enjoy limit of Ksh 0.00 at an Access fee of 1%..."
+  static final RegExp _optInPattern = RegExp(
+    r'Dear\s+(\w+),\s+you\s+have\s+successfully\s+opted\s+into\s+Fuliza\s+M-PESA\.\s+Enjoy\s+limit\s+of\s+Ksh\s*([\d,]+\.?\d*)',
+    caseSensitive: false,
+  );
+
+  /// Check if a message is a Fuliza limit-related message
+  static bool isLimitMessage(String message) {
+    final lowerMessage = message.toLowerCase();
+    if (!lowerMessage.contains('fuliza')) return false;
+
+    return lowerMessage.contains('your fuliza m-pesa limit is') ||
+        lowerMessage.contains('available fuliza m-pesa limit is') ||
+        lowerMessage.contains('your available fuliza m-pesa limit is') ||
+        lowerMessage.contains('opted into fuliza m-pesa');
+  }
+
+  /// Parse a single SMS message for limit information
+  static FulizaLimit? parseLimit(String message, DateTime smsDate) {
+    final cleanMessage = message
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .replaceAll(RegExp(r'\n+'), ' ')
+        .trim();
+
+    // Try limit increase notification pattern
+    final increaseMatch = _limitIncreasePattern.firstMatch(cleanMessage);
+    if (increaseMatch != null) {
+      final limit = _parseAmount(increaseMatch.group(1)!);
+      debugPrint('  ✅ Matched limit increase: Ksh $limit');
+      return FulizaLimit(
+        type: FulizaLimitType.increase,
+        limit: limit,
+        date: smsDate,
+        rawSms: message,
+      );
+    }
+
+    // Try full payment limit pattern
+    final fullPayMatch = _fullPaymentLimitPattern.firstMatch(cleanMessage);
+    if (fullPayMatch != null) {
+      final transactionId = fullPayMatch.group(1)!;
+      final limit = _parseAmount(fullPayMatch.group(3)!);
+      debugPrint('  ✅ Matched full payment limit: Ksh $limit ($transactionId)');
+      return FulizaLimit(
+        type: FulizaLimitType.fullPayment,
+        limit: limit,
+        date: smsDate,
+        transactionId: transactionId,
+        rawSms: message,
+      );
+    }
+
+    // Try partial payment limit pattern
+    final partialPayMatch = _partialPaymentLimitPattern.firstMatch(cleanMessage);
+    if (partialPayMatch != null) {
+      final transactionId = partialPayMatch.group(1)!;
+      final limit = _parseAmount(partialPayMatch.group(3)!);
+      debugPrint('  ✅ Matched partial payment limit: Ksh $limit ($transactionId)');
+      return FulizaLimit(
+        type: FulizaLimitType.partialPayment,
+        limit: limit,
+        date: smsDate,
+        transactionId: transactionId,
+        rawSms: message,
+      );
+    }
+
+    // Try opt-in pattern
+    final optInMatch = _optInPattern.firstMatch(cleanMessage);
+    if (optInMatch != null) {
+      final limit = _parseAmount(optInMatch.group(2)!);
+      debugPrint('  ✅ Matched opt-in limit: Ksh $limit');
+      return FulizaLimit(
+        type: FulizaLimitType.optIn,
+        limit: limit,
+        date: smsDate,
+        rawSms: message,
+      );
+    }
+
+    return null;
+  }
+
+  /// Parse multiple SMS messages and extract all limit records
+  static List<FulizaLimit> parseMultiple(List<SmsData> messages) {
+    final limits = <FulizaLimit>[];
+    final seenLimits = <String>{};
+
+    debugPrint('\n🔍 Parsing Fuliza limit messages...');
+    int limitMessagesFound = 0;
+
+    for (final sms in messages) {
+      if (isLimitMessage(sms.body)) {
+        limitMessagesFound++;
+        final limit = parseLimit(sms.body, sms.date);
+        if (limit != null) {
+          // Create unique key to avoid duplicates
+          final key = '${limit.limit}_${limit.date.year}${limit.date.month}${limit.date.day}_${limit.type.name}';
+          if (!seenLimits.contains(key)) {
+            seenLimits.add(key);
+            limits.add(limit);
+          }
+        }
+      }
+    }
+
+    debugPrint('✅ Found $limitMessagesFound limit messages, parsed ${limits.length} unique limits');
+
+    // Sort by date ascending to calculate previous limits
+    limits.sort((a, b) => a.date.compareTo(b.date));
+
+    // Calculate previous limits for increase type
+    final processedLimits = <FulizaLimit>[];
+    double? lastIncreaseLimit;
+
+    for (final limit in limits) {
+      if (limit.type == FulizaLimitType.increase) {
+        if (lastIncreaseLimit != null && limit.limit > lastIncreaseLimit) {
+          processedLimits.add(limit.copyWith(previousLimit: lastIncreaseLimit));
+        } else {
+          processedLimits.add(limit);
+        }
+        lastIncreaseLimit = limit.limit;
+      } else {
+        processedLimits.add(limit);
+      }
+    }
+
+    return processedLimits;
+  }
+
+  /// Get the current (latest) Fuliza limit
+  static FulizaLimit? getLatestLimit(List<FulizaLimit> limits) {
+    if (limits.isEmpty) return null;
+
+    // Sort by date descending and return the first one
+    final sorted = List<FulizaLimit>.from(limits)
+      ..sort((a, b) => b.date.compareTo(a.date));
+
+    return sorted.first;
+  }
+
+  /// Get all limit increases (sorted chronologically)
+  static List<FulizaLimit> getLimitIncreases(List<FulizaLimit> limits) {
+    return limits
+        .where((l) => l.type == FulizaLimitType.increase)
+        .toList()
+      ..sort((a, b) => a.date.compareTo(b.date));
+  }
+
+  static double _parseAmount(String amountStr) {
+    final cleaned = amountStr.replaceAll(',', '').trim();
+    return double.tryParse(cleaned) ?? 0.0;
+  }
+}

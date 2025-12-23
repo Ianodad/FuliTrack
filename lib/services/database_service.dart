@@ -6,7 +6,7 @@ import '../models/models.dart';
 class DatabaseService {
   static Database? _database;
   static const String _dbName = 'fulitrack.db';
-  static const int _dbVersion = 1;
+  static const int _dbVersion = 2;
 
   /// Get database instance (creates if not exists)
   Future<Database> get database async {
@@ -67,6 +67,19 @@ class DatabaseService {
       )
     ''');
 
+    // Fuliza limits table
+    await db.execute('''
+      CREATE TABLE fuliza_limits (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        type TEXT NOT NULL,
+        limit_amount REAL NOT NULL,
+        date INTEGER NOT NULL,
+        transaction_id TEXT,
+        raw_sms TEXT NOT NULL,
+        previous_limit REAL
+      )
+    ''');
+
     // Create indexes for faster queries
     await db.execute(
       'CREATE INDEX idx_events_date ON fuliza_events(date)',
@@ -80,13 +93,35 @@ class DatabaseService {
     await db.execute(
       'CREATE INDEX idx_rewards_period_start ON fuliza_rewards(period_start)',
     );
+    await db.execute(
+      'CREATE INDEX idx_limits_date ON fuliza_limits(date)',
+    );
+    await db.execute(
+      'CREATE INDEX idx_limits_type ON fuliza_limits(type)',
+    );
   }
 
   /// Handle database upgrades
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Future migrations go here
+    // Migration from version 1 to 2: Add fuliza_limits table
     if (oldVersion < 2) {
-      // Example: await db.execute('ALTER TABLE fuliza_events ADD COLUMN new_field TEXT');
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS fuliza_limits (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          type TEXT NOT NULL,
+          limit_amount REAL NOT NULL,
+          date INTEGER NOT NULL,
+          transaction_id TEXT,
+          raw_sms TEXT NOT NULL,
+          previous_limit REAL
+        )
+      ''');
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_limits_date ON fuliza_limits(date)',
+      );
+      await db.execute(
+        'CREATE INDEX IF NOT EXISTS idx_limits_type ON fuliza_limits(type)',
+      );
     }
   }
 
@@ -260,6 +295,81 @@ class DatabaseService {
     return db.delete('fuliza_rewards');
   }
 
+  // ==================== Fuliza Limits ====================
+
+  /// Insert a new limit record
+  Future<int> insertLimit(FulizaLimit limit) async {
+    final db = await database;
+    return db.insert(
+      'fuliza_limits',
+      limit.toMap()..remove('id'),
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+  }
+
+  /// Insert multiple limits (batch)
+  Future<void> insertLimits(List<FulizaLimit> limits) async {
+    final db = await database;
+    final batch = db.batch();
+
+    for (final limit in limits) {
+      batch.insert(
+        'fuliza_limits',
+        limit.toMap()..remove('id'),
+        conflictAlgorithm: ConflictAlgorithm.ignore,
+      );
+    }
+
+    await batch.commit(noResult: true);
+  }
+
+  /// Get all limit records
+  Future<List<FulizaLimit>> getAllLimits() async {
+    final db = await database;
+    final maps = await db.query(
+      'fuliza_limits',
+      orderBy: 'date DESC',
+    );
+    return maps.map((map) => FulizaLimit.fromMap(map)).toList();
+  }
+
+  /// Get the latest limit record
+  Future<FulizaLimit?> getLatestLimit() async {
+    final db = await database;
+    final maps = await db.query(
+      'fuliza_limits',
+      orderBy: 'date DESC',
+      limit: 1,
+    );
+    if (maps.isEmpty) return null;
+    return FulizaLimit.fromMap(maps.first);
+  }
+
+  /// Get limit increases only (sorted by date ascending)
+  Future<List<FulizaLimit>> getLimitIncreases() async {
+    final db = await database;
+    final maps = await db.query(
+      'fuliza_limits',
+      where: 'type = ?',
+      whereArgs: ['increase'],
+      orderBy: 'date ASC',
+    );
+    return maps.map((map) => FulizaLimit.fromMap(map)).toList();
+  }
+
+  /// Get limit count
+  Future<int> getLimitCount() async {
+    final db = await database;
+    final result = await db.rawQuery('SELECT COUNT(*) as count FROM fuliza_limits');
+    return Sqflite.firstIntValue(result) ?? 0;
+  }
+
+  /// Delete all limits
+  Future<int> deleteAllLimits() async {
+    final db = await database;
+    return db.delete('fuliza_limits');
+  }
+
   // ==================== App Settings ====================
 
   /// Save a setting
@@ -398,6 +508,7 @@ class DatabaseService {
     final db = await database;
     await db.delete('fuliza_events');
     await db.delete('fuliza_rewards');
+    await db.delete('fuliza_limits');
   }
 
   /// Close the database
