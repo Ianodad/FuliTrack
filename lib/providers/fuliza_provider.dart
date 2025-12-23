@@ -125,17 +125,51 @@ class FulizaNotifier extends StateNotifier<FulizaState> {
       // Fetch and parse SMS
       print('\n📱 Fetching Fuliza events from SMS...');
       final events = await _smsService.getFulizaEvents();
+      print('📦 Got ${events.length} events from SMS parser');
+
+      if (events.isEmpty) {
+        print('⚠️  No events to insert');
+        state = state.copyWith(isLoading: false);
+        return 0;
+      }
+
+      // Check how many events are already in database before insert
+      final countBefore = await _db.getEventCount();
+      print('📊 Events in database BEFORE insert: $countBefore');
 
       // Insert new events (duplicates are ignored)
       print('\n💾 Inserting ${events.length} events into database...');
       await _db.insertEvents(events);
 
-      // Reload data
-      print('🔄 Reloading data...');
+      // Check count after insert
+      final countAfter = await _db.getEventCount();
+      print('📊 Events in database AFTER insert: $countAfter');
+      print('   New events added: ${countAfter - countBefore}');
+
+      // Reload data with current filter
+      print('\n🔄 Reloading data with filter: ${state.currentFilter}');
       await loadData();
 
+      // If current filter shows no events but database has events, switch to All Time
+      if (state.events.isEmpty && countAfter > 0) {
+        print('⚠️  Current filter shows 0 events but DB has $countAfter');
+        print('🔄 Switching to All Time filter...');
+        state = state.copyWith(currentFilter: DateFilter.allTime);
+        await loadData();
+      }
+
+      // Log final state
+      print('\n📋 Final state:');
+      print('   Events in state: ${state.events.length}');
+      print('   Summary - Loans: ${state.summary.totalLoaned}');
+      print('   Summary - Interest: ${state.summary.totalInterest}');
+
       print('\n========================================');
-      print('✅ SMS SYNC COMPLETED: ${events.length} events');
+      print('✅ SMS SYNC COMPLETED');
+      print('   Parsed: ${events.length} events');
+      print('   New: ${countAfter - countBefore} events');
+      print('   Total in DB: $countAfter events');
+      print('   Displayed: ${state.events.length} events (filtered by ${state.currentFilter})');
       print('========================================\n');
 
       return events.length;

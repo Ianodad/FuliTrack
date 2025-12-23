@@ -14,13 +14,21 @@ class NewDashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
-  String _selectedPeriod = 'Month';
-
   @override
   Widget build(BuildContext context) {
     final summary = ref.watch(fulizaSummaryProvider);
     final events = ref.watch(fulizaProvider).events;
     final isLoading = ref.watch(fulizaProvider).isLoading;
+    final currentFilter = ref.watch(fulizaFilterProvider);
+
+    // Derive selected period from provider filter state
+    final _selectedPeriod = switch (currentFilter) {
+      DateFilter.thisWeek => 'Week',
+      DateFilter.thisMonth => 'Month',
+      DateFilter.thisYear => 'Year',
+      DateFilter.allTime => 'All',
+      DateFilter.custom => 'All',
+    };
 
     return Scaffold(
       backgroundColor: AppTheme.slate50,
@@ -67,7 +75,7 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
                         ),
 
                         // Summary Cards
-                        _buildSummaryCards(summary),
+                        _buildSummaryCards(summary, _selectedPeriod),
 
               const SizedBox(height: 24),
 
@@ -86,7 +94,6 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
                       return Expanded(
                         child: GestureDetector(
                           onTap: () {
-                            setState(() => _selectedPeriod = period);
                             final filter = period == 'Week'
                                 ? DateFilter.thisWeek
                                 : period == 'Month'
@@ -132,7 +139,7 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
               const SizedBox(height: 24),
 
               // Insight Card
-              _buildInsightCard(summary),
+              _buildInsightCard(summary, _selectedPeriod),
 
               const SizedBox(height: 24),
 
@@ -151,7 +158,7 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    _buildMiniChart(),
+                    _buildMiniChart(_selectedPeriod),
                   ],
                 ),
               ),
@@ -223,14 +230,14 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
     );
   }
 
-  Widget _buildSummaryCards(FulizaSummary summary) {
+  Widget _buildSummaryCards(FulizaSummary summary, String selectedPeriod) {
     final currencyFormat = NumberFormat.currency(symbol: 'Ksh ', decimalDigits: 2);
 
     final fulizaUsed = summary.totalLoaned;
     final interestPaid = summary.totalInterest;
     final outstanding = summary.outstandingBalance;
 
-    final subtitleText = _selectedPeriod == 'All' ? 'All time' : 'This $_selectedPeriod';
+    final subtitleText = selectedPeriod == 'All' ? 'All time' : 'This $selectedPeriod';
 
     return SizedBox(
       height: 120,
@@ -264,7 +271,7 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
     );
   }
 
-  Widget _buildInsightCard(FulizaSummary summary) {
+  Widget _buildInsightCard(FulizaSummary summary, String selectedPeriod) {
     // Don't show insight card if no data
     if (summary.totalInterest == 0 && summary.totalLoaned == 0) {
       return const SizedBox();
@@ -273,9 +280,9 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
     final currencyFormat = NumberFormat.currency(symbol: 'Ksh ', decimalDigits: 2);
 
     // Format the period text
-    String periodText = _selectedPeriod == 'All'
+    String periodText = selectedPeriod == 'All'
         ? 'all time'
-        : 'this $_selectedPeriod'.toLowerCase();
+        : 'this $selectedPeriod'.toLowerCase();
 
     // Simple insight message based on available data
     String mainMessage;
@@ -357,7 +364,7 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
     );
   }
 
-  Widget _buildMiniChart() {
+  Widget _buildMiniChart(String selectedPeriod) {
     final events = ref.watch(fulizaProvider).events;
 
     // Calculate interest by period (last 7 days/weeks depending on selection)
@@ -380,13 +387,13 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
         DateTime periodStart;
         DateTime periodEnd;
 
-        if (_selectedPeriod == 'Week') {
+        if (selectedPeriod == 'Week') {
           // Last 7 weeks - each bar is a week
           final weeksAgo = i;
           periodEnd = DateTime(now.year, now.month, now.day)
               .subtract(Duration(days: weeksAgo * 7));
           periodStart = periodEnd.subtract(const Duration(days: 6));
-        } else if (_selectedPeriod == 'Year' || _selectedPeriod == 'All') {
+        } else if (selectedPeriod == 'Year' || selectedPeriod == 'All') {
           // Last 7 months - each bar is a month (same for Year and All)
           final targetMonth = DateTime(now.year, now.month - i, 1);
           periodStart = DateTime(targetMonth.year, targetMonth.month, 1);
