@@ -12,6 +12,7 @@ class FulizaState {
   final DateFilter currentFilter;
   final DateTime? customStartDate;
   final DateTime? customEndDate;
+  final int totalEventCount; // Total events in DB (regardless of filter)
 
   FulizaState({
     this.events = const [],
@@ -21,6 +22,7 @@ class FulizaState {
     this.currentFilter = DateFilter.thisMonth,
     this.customStartDate,
     this.customEndDate,
+    this.totalEventCount = 0,
   }) : summary = summary ?? FulizaSummary.empty();
 
   FulizaState copyWith({
@@ -31,6 +33,7 @@ class FulizaState {
     DateFilter? currentFilter,
     DateTime? customStartDate,
     DateTime? customEndDate,
+    int? totalEventCount,
   }) {
     return FulizaState(
       events: events ?? this.events,
@@ -40,6 +43,7 @@ class FulizaState {
       currentFilter: currentFilter ?? this.currentFilter,
       customStartDate: customStartDate ?? this.customStartDate,
       customEndDate: customEndDate ?? this.customEndDate,
+      totalEventCount: totalEventCount ?? this.totalEventCount,
     );
   }
 }
@@ -62,6 +66,9 @@ class FulizaNotifier extends StateNotifier<FulizaState> {
       print('\n📊 Loading data with filter: ${state.currentFilter}');
       print('   Date range: $start to $end');
 
+      // Get total count (regardless of filter) to know if we have any data
+      final totalCount = await _db.getEventCount();
+
       final events = start != null && end != null
           ? await _db.getEventsByDateRange(start, end)
           : await _db.getAllEvents();
@@ -72,7 +79,8 @@ class FulizaNotifier extends StateNotifier<FulizaState> {
       final interests = events.where((e) => e.type == FulizaEventType.interest).length;
       final repayments = events.where((e) => e.type == FulizaEventType.repayment).length;
 
-      print('   📦 Loaded ${events.length} events:');
+      print('   📦 Total events in DB: $totalCount');
+      print('   📦 Filtered events: ${events.length}');
       print('      - Loans: $loans');
       print('      - Interests: $interests');
       print('      - Repayments: $repayments');
@@ -86,6 +94,7 @@ class FulizaNotifier extends StateNotifier<FulizaState> {
         events: events,
         summary: summary,
         isLoading: false,
+        totalEventCount: totalCount,
       );
     } catch (e) {
       state = state.copyWith(

@@ -30,12 +30,18 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
       DateFilter.custom => 'All',
     };
 
+    // Get total event count to determine if there's ANY data in database
+    final totalEventCount = ref.watch(fulizaProvider).totalEventCount;
+
+    // Show empty state ONLY when there's truly no data in database at all
+    final showEmptyState = totalEventCount == 0;
+
     return Scaffold(
       backgroundColor: AppTheme.slate50,
       body: SafeArea(
         child: isLoading
             ? const Center(child: CircularProgressIndicator())
-            : events.isEmpty
+            : showEmptyState
                 ? _buildEmptyState(context)
                 : SingleChildScrollView(
                     child: Column(
