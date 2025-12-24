@@ -40,11 +40,11 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
           Positioned(
             left: 32,
             right: 32,
-            bottom: 32,
+            bottom: 16, // Moved down by reducing bottom padding
             child: Container(
               decoration: BoxDecoration(
                 color: AppTheme.slate900.withOpacity(0.95),
-                borderRadius: BorderRadius.circular(40),
+                borderRadius: BorderRadius.circular(28), // Slightly smaller for thinner look
                 border: Border.all(
                   color: Colors.white.withOpacity(0.1),
                 ),
@@ -57,13 +57,13 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
                 ],
               ),
               child: ClipRRect(
-                borderRadius: BorderRadius.circular(40),
+                borderRadius: BorderRadius.circular(28),
                 child: BackdropFilter(
                   filter:
                       ColorFilter.mode(Colors.transparent, BlendMode.overlay),
                   child: Padding(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 10), // Reduced vertical padding for thinner navbar
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [

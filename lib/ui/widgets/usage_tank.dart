@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 
 /// UsageTank Component:
@@ -9,11 +10,13 @@ import '../theme/app_theme.dart';
 class UsageTank extends StatefulWidget {
   final double spent;
   final double limit;
+  final VoidCallback? onTap;
 
   const UsageTank({
     super.key,
     required this.spent,
     required this.limit,
+    this.onTap,
   });
 
   @override
@@ -89,145 +92,199 @@ class _UsageTankState extends State<UsageTank>
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppTheme.slate900,
-        borderRadius: BorderRadius.circular(40),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.05),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+    return GestureDetector(
+      onTap: widget.onTap != null ? () {
+        HapticFeedback.lightImpact();
+        widget.onTap!();
+      } : null,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.slate900,
+          borderRadius: BorderRadius.circular(40),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.05),
+            width: 1,
           ),
-        ],
-      ),
-      padding: const EdgeInsets.all(24),
-      child: Stack(
-        children: [
-          // Glow backdrop
-          Positioned(
-            right: -40,
-            top: -40,
-            child: Container(
-              width: 128,
-              height: 128,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    (_isHigh ? AppTheme.red500 : AppTheme.teal500)
-                        .withOpacity(0.2),
-                    Colors.transparent,
-                  ],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Stack(
+          children: [
+            // Glow backdrop
+            Positioned(
+              right: -40,
+              top: -40,
+              child: Container(
+                width: 128,
+                height: 128,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      (_isHigh ? AppTheme.red500 : AppTheme.teal500)
+                          .withOpacity(0.2),
+                      Colors.transparent,
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
 
-          // Content
-          Row(
-            children: [
-              // Vertical tank
-              _buildTank(),
-              const SizedBox(width: 24),
+            // Content
+            Row(
+              children: [
+                // Vertical tank
+                _buildTank(),
+                const SizedBox(width: 24),
 
-              // Info section
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      'LIMIT UTILIZATION',
-                      style: AppTheme.labelUppercase.copyWith(
-                        color: AppTheme.slate500,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.baseline,
-                      textBaseline: TextBaseline.alphabetic,
-                      children: [
-                        Text(
-                          'Ksh ${_formatNumber(widget.spent)}',
-                          style: const TextStyle(
-                            fontSize: 24,
-                            fontWeight: FontWeight.w900,
-                            fontStyle: FontStyle.italic,
-                            color: Colors.white,
-                          ),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '/ ${_formatNumber(widget.limit)}',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.slate500,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    AnimatedBuilder(
-                      animation: _fillAnimation,
-                      builder: (context, child) => Text(
-                        '${_fillAnimation.value.toStringAsFixed(0)}% of your limit used',
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                          color: _isHigh ? AppTheme.amber500 : AppTheme.teal400,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Status badge
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppTheme.slate800,
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.05),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
+                // Info section
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Icon(
-                            Icons.bolt,
-                            size: 12,
-                            color:
-                                _isHigh ? AppTheme.amber500 : AppTheme.teal400,
-                          ),
-                          const SizedBox(width: 6),
                           Text(
-                            'STATUS: ${_isHigh ? 'HIGH RISK' : 'OPTIMAL'}',
-                            style: TextStyle(
-                              fontSize: 9,
+                            'LIMIT UTILIZATION',
+                            style: AppTheme.labelUppercase.copyWith(
+                              color: AppTheme.slate500,
+                              letterSpacing: 2,
+                            ),
+                          ),
+                          if (widget.onTap != null)
+                            Icon(
+                              Icons.chevron_right_rounded,
+                              size: 16,
+                              color: AppTheme.slate500,
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            'Ksh ${_formatNumber(widget.spent)}',
+                            style: const TextStyle(
+                              fontSize: 24,
                               fontWeight: FontWeight.w900,
+                              fontStyle: FontStyle.italic,
                               color: Colors.white,
-                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '/ ${_formatNumber(widget.limit)}',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.slate500,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 4),
+                      AnimatedBuilder(
+                        animation: _fillAnimation,
+                        builder: (context, child) => Text(
+                          '${_fillAnimation.value.toStringAsFixed(0)}% of your limit used',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: _isHigh ? AppTheme.amber500 : AppTheme.teal400,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+
+                      // Status badge with View History hint
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.slate800,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Colors.white.withOpacity(0.05),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.bolt,
+                                  size: 12,
+                                  color:
+                                      _isHigh ? AppTheme.amber500 : AppTheme.teal400,
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'STATUS: ${_isHigh ? 'HIGH RISK' : 'OPTIMAL'}',
+                                  style: const TextStyle(
+                                    fontSize: 9,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.white,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          if (widget.onTap != null) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppTheme.teal500.withOpacity(0.15),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.history_rounded,
+                                    size: 10,
+                                    color: AppTheme.teal400,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    'HISTORY',
+                                    style: TextStyle(
+                                      fontSize: 8,
+                                      fontWeight: FontWeight.w900,
+                                      color: AppTheme.teal400,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

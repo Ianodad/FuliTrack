@@ -258,23 +258,29 @@ class _GraphPainter extends CustomPainter {
     final maxValue = data.map((d) => d.value).reduce((a, b) => a > b ? a : b);
     if (maxValue == 0) return;
 
-    final padding = 40.0;
-    final graphWidth = size.width - 2 * padding;
-    final graphHeight = size.height - 2 * padding;
+    final leftPadding = 50.0; // More space for Y-axis labels
+    final rightPadding = 20.0;
+    final topPadding = 20.0;
+    final bottomPadding = 30.0;
+    final graphWidth = size.width - leftPadding - rightPadding;
+    final graphHeight = size.height - topPadding - bottomPadding;
+
+    // Draw Y-axis labels and grid lines
+    _drawYAxis(canvas, size, maxValue, leftPadding, topPadding, graphHeight);
 
     // Calculate points
     final points = <Offset>[];
     for (var i = 0; i < data.length; i++) {
-      final x = padding + (i * graphWidth) / (data.length - 1);
+      final x = leftPadding + (i * graphWidth) / (data.length - 1);
       final y = size.height -
-          padding -
+          bottomPadding -
           (data[i].value / maxValue) * graphHeight;
       points.add(Offset(x, y));
     }
 
     // Create gradient for fill area
     final areaPath = Path();
-    areaPath.moveTo(points.first.dx, size.height - padding);
+    areaPath.moveTo(points.first.dx, size.height - bottomPadding);
     areaPath.lineTo(points.first.dx, points.first.dy);
 
     // Draw smooth curve using cubic bezier
@@ -293,7 +299,7 @@ class _GraphPainter extends CustomPainter {
       );
     }
 
-    areaPath.lineTo(points.last.dx, size.height - padding);
+    areaPath.lineTo(points.last.dx, size.height - bottomPadding);
     areaPath.close();
 
     // Fill gradient
@@ -406,6 +412,60 @@ class _GraphPainter extends CustomPainter {
           points[i].dx - textPainter.width / 2,
           size.height - 15,
         ),
+      );
+    }
+  }
+
+  void _drawYAxis(Canvas canvas, Size size, double maxValue, double leftPadding, double topPadding, double graphHeight) {
+    final textPainter = TextPainter(
+      textDirection: TextDirection.ltr,
+      textAlign: TextAlign.right,
+    );
+
+    // Draw 3 Y-axis labels: 0, mid, max
+    final yValues = [0.0, maxValue / 2, maxValue];
+    final yPositions = [
+      size.height - 30, // Bottom (0)
+      topPadding + graphHeight / 2, // Middle
+      topPadding, // Top (max)
+    ];
+
+    for (var i = 0; i < yValues.length; i++) {
+      final value = yValues[i];
+      final yPos = yPositions[i];
+
+      // Format the value (use K for thousands)
+      String label;
+      if (value >= 1000) {
+        label = '${(value / 1000).toStringAsFixed(1)}K';
+      } else {
+        label = value.toStringAsFixed(0);
+      }
+
+      textPainter.text = TextSpan(
+        text: label,
+        style: const TextStyle(
+          color: AppTheme.slate500,
+          fontSize: 9,
+          fontWeight: FontWeight.bold,
+        ),
+      );
+      textPainter.layout();
+      textPainter.paint(
+        canvas,
+        Offset(leftPadding - textPainter.width - 8, yPos - textPainter.height / 2),
+      );
+
+      // Draw subtle grid line
+      final linePaint = Paint()
+        ..color = AppTheme.slate700.withOpacity(0.3)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1;
+
+      canvas.drawLine(
+        Offset(leftPadding, yPos),
+        Offset(size.width - 20, yPos),
+        linePaint,
       );
     }
   }

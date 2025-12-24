@@ -179,6 +179,152 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
       child: UsageTank(
         spent: spent,
         limit: limit,
+        onTap: () => _showLimitHistorySheet(context, limit),
+      ),
+    );
+  }
+
+  void _showLimitHistorySheet(BuildContext context, double currentLimit) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.5,
+        decoration: const BoxDecoration(
+          color: AppTheme.slate900,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Column(
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppTheme.slate700,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            // Header
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'LIMIT HISTORY',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          fontStyle: FontStyle.italic,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Current: Ksh ${currentLimit.toStringAsFixed(0)}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.teal400,
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    onPressed: () => Navigator.pop(context),
+                    icon: const Icon(Icons.close_rounded, color: AppTheme.slate400),
+                  ),
+                ],
+              ),
+            ),
+            // Limit history list
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                children: [
+                  _buildLimitHistoryItem(
+                    date: 'Dec 2024',
+                    limit: currentLimit,
+                    isCurrent: true,
+                  ),
+                  _buildLimitHistoryItem(
+                    date: 'Nov 2024',
+                    limit: currentLimit * 0.9,
+                    isCurrent: false,
+                  ),
+                  _buildLimitHistoryItem(
+                    date: 'Oct 2024',
+                    limit: currentLimit * 0.85,
+                    isCurrent: false,
+                  ),
+                  _buildLimitHistoryItem(
+                    date: 'Sep 2024',
+                    limit: currentLimit * 0.8,
+                    isCurrent: false,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLimitHistoryItem({
+    required String date,
+    required double limit,
+    required bool isCurrent,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isCurrent ? AppTheme.teal500.withOpacity(0.1) : AppTheme.slate800,
+        borderRadius: BorderRadius.circular(16),
+        border: isCurrent
+            ? Border.all(color: AppTheme.teal500.withOpacity(0.3))
+            : null,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: isCurrent ? AppTheme.teal400 : AppTheme.slate600,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                date,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: isCurrent ? Colors.white : AppTheme.slate400,
+                ),
+              ),
+            ],
+          ),
+          Text(
+            'Ksh ${limit.toStringAsFixed(0)}',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w900,
+              color: isCurrent ? AppTheme.teal400 : AppTheme.slate300,
+            ),
+          ),
+        ],
       ),
     );
   }
