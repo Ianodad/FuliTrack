@@ -387,7 +387,8 @@ class _TransactionCard extends StatelessWidget {
                 ],
               ),
             ),
-        ],
+          ],
+        ),
       ),
     );
   }
