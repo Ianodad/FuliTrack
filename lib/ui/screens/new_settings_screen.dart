@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
+import '../widgets/premium_widgets.dart';
 import '../../providers/providers.dart';
 
 /// Settings screen with premium design - System Setup
@@ -35,14 +37,14 @@ class NewSettingsScreen extends ConsumerWidget {
               const SizedBox(height: 8),
 
               // Personalization Section
-              _buildSectionHeader('PERSONALIZATION'),
+              _buildSectionHeader('PERSONALIZATION', icon: Icons.tune_rounded),
               const SizedBox(height: 12),
               _buildPersonalizationCard(context, ref),
 
               const SizedBox(height: 32),
 
               // Data Management Section
-              _buildSectionHeader('DATA & ENGINE'),
+              _buildSectionHeader('DATA & ENGINE', icon: Icons.storage_rounded),
               const SizedBox(height: 12),
               _buildDataManagementCard(context, ref),
 
@@ -51,25 +53,21 @@ class NewSettingsScreen extends ConsumerWidget {
               // Sign Out Button
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: SizedBox(
-                  width: double.infinity,
-                  height: 56,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      // Sign out action
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.slate900,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                child: TappableButton(
+                  onTap: () {
+                    // Sign out action
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: AppTheme.slate900,
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.logout_rounded, size: 16),
+                        const Icon(Icons.logout_rounded, size: 16, color: Colors.white),
                         const SizedBox(width: 8),
                         Text(
                           'SIGN OUT',
@@ -78,6 +76,7 @@ class NewSettingsScreen extends ConsumerWidget {
                             fontWeight: FontWeight.w900,
                             fontStyle: FontStyle.italic,
                             letterSpacing: 2,
+                            color: Colors.white,
                           ),
                         ),
                       ],
@@ -120,17 +119,13 @@ class NewSettingsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
+  Widget _buildSectionHeader(String title, {IconData? icon}) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 26),
-      child: Text(
-        title,
-        style: TextStyle(
-          fontSize: 10,
-          fontWeight: FontWeight.w900,
-          color: AppTheme.slate400,
-          letterSpacing: 2,
-        ),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: GradientHeader(
+        title: title,
+        icon: icon,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
   }
@@ -323,7 +318,10 @@ class NewSettingsScreen extends ConsumerWidget {
           ),
           // Toggle switch
           GestureDetector(
-            onTap: () => onToggle(!isEnabled),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onToggle(!isEnabled);
+            },
             child: Container(
               width: 40,
               height: 20,

@@ -1,23 +1,188 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 
 /// FuliGraph Component:
 /// An SVG-style custom line chart that renders data points as a smooth Bezier curve.
-class FuliGraph extends StatelessWidget {
+/// Features interactive tap-able data points with animated tooltips.
+class FuliGraph extends StatefulWidget {
   final List<FuliGraphData> data;
+  final Function(int index, FuliGraphData data)? onPointTap;
 
   const FuliGraph({
     super.key,
     required this.data,
+    this.onPointTap,
   });
 
   @override
+  State<FuliGraph> createState() => _FuliGraphState();
+}
+
+class _FuliGraphState extends State<FuliGraph> with SingleTickerProviderStateMixin {
+  int? _selectedIndex;
+  OverlayEntry? _tooltipOverlay;
+  final GlobalKey _graphKey = GlobalKey();
+  late AnimationController _tooltipController;
+  late Animation<double> _tooltipAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _tooltipController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _tooltipAnimation = CurvedAnimation(
+      parent: _tooltipController,
+      curve: Curves.easeOutBack,
+    );
+  }
+
+  @override
+  void dispose() {
+    _hideTooltip();
+    _tooltipController.dispose();
+    super.dispose();
+  }
+
+  void _hideTooltip() {
+    _tooltipOverlay?.remove();
+    _tooltipOverlay = null;
+  }
+
+  void _showTooltip(int index, Offset position) {
+    _hideTooltip();
+
+    final data = widget.data[index];
+    final RenderBox? renderBox = _graphKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final globalPosition = renderBox.localToGlobal(position);
+
+    _tooltipOverlay = OverlayEntry(
+      builder: (context) => Positioned(
+        left: globalPosition.dx - 50,
+        top: globalPosition.dy - 60,
+        child: AnimatedBuilder(
+          animation: _tooltipAnimation,
+          builder: (context, child) => Transform.scale(
+            scale: _tooltipAnimation.value,
+            child: Opacity(
+              opacity: _tooltipAnimation.value,
+              child: Material(
+                color: Colors.transparent,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppTheme.slate800,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        data.label,
+                        style: const TextStyle(
+                          color: AppTheme.slate400,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Ksh ${data.value.toStringAsFixed(0)}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Overlay.of(context).insert(_tooltipOverlay!);
+    _tooltipController.forward(from: 0);
+  }
+
+  void _onTapDown(TapDownDetails details) {
+    if (widget.data.isEmpty) return;
+
+    // Calculate which point was tapped
+    final RenderBox renderBox = _graphKey.currentContext!.findRenderObject() as RenderBox;
+    final localPosition = details.localPosition;
+    final size = renderBox.size;
+
+    final padding = 40.0;
+    final graphWidth = size.width - 2 * padding;
+
+    // Find nearest point
+    int? nearestIndex;
+    double nearestDistance = double.infinity;
+
+    for (var i = 0; i < widget.data.length; i++) {
+      final pointX = padding + (i * graphWidth) / (widget.data.length - 1);
+      final distance = (localPosition.dx - pointX).abs();
+
+      if (distance < nearestDistance && distance < 30) {
+        nearestDistance = distance;
+        nearestIndex = i;
+      }
+    }
+
+    if (nearestIndex != null) {
+      // Haptic feedback
+      HapticFeedback.lightImpact();
+
+      setState(() {
+        _selectedIndex = nearestIndex;
+      });
+
+      // Calculate point position for tooltip
+      final maxValue = widget.data.map((d) => d.value).reduce((a, b) => a > b ? a : b);
+      final graphHeight = size.height - 2 * padding - 24; // Account for labels
+      final pointX = padding + (nearestIndex * graphWidth) / (widget.data.length - 1);
+      final pointY = size.height - padding - 24 - (widget.data[nearestIndex].value / maxValue) * graphHeight;
+
+      _showTooltip(nearestIndex, Offset(pointX, pointY));
+
+      widget.onPointTap?.call(nearestIndex, widget.data[nearestIndex]);
+    }
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    Future.delayed(const Duration(seconds: 2), () {
+      if (mounted) {
+        setState(() {
+          _selectedIndex = null;
+        });
+        _hideTooltip();
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    if (data.isEmpty) {
+    if (widget.data.isEmpty) {
       return _buildEmptyState();
     }
 
     return Container(
+      key: _graphKey,
       decoration: BoxDecoration(
         color: AppTheme.slate900,
         borderRadius: BorderRadius.circular(40),
@@ -27,9 +192,17 @@ class FuliGraph extends StatelessWidget {
         ),
       ),
       padding: const EdgeInsets.all(24),
-      child: CustomPaint(
-        size: const Size(double.infinity, 150),
-        painter: _GraphPainter(data: data),
+      child: GestureDetector(
+        onTapDown: _onTapDown,
+        onTapUp: _onTapUp,
+        behavior: HitTestBehavior.opaque,
+        child: CustomPaint(
+          size: const Size(double.infinity, 150),
+          painter: _GraphPainter(
+            data: widget.data,
+            selectedIndex: _selectedIndex,
+          ),
+        ),
       ),
     );
   }
@@ -46,7 +219,7 @@ class FuliGraph extends StatelessWidget {
         ),
       ),
       padding: const EdgeInsets.all(24),
-      child: Center(
+      child: const Center(
         child: Text(
           'No data available',
           style: TextStyle(
@@ -71,8 +244,12 @@ class FuliGraphData {
 
 class _GraphPainter extends CustomPainter {
   final List<FuliGraphData> data;
+  final int? selectedIndex;
 
-  _GraphPainter({required this.data});
+  _GraphPainter({
+    required this.data,
+    this.selectedIndex,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -181,18 +358,45 @@ class _GraphPainter extends CustomPainter {
     canvas.drawPath(linePath, glowPaint);
     canvas.drawPath(linePath, linePaint);
 
+    // Draw interactive data points
+    for (var i = 0; i < points.length; i++) {
+      final isSelected = selectedIndex == i;
+      final point = points[i];
+
+      // Outer glow for selected point
+      if (isSelected) {
+        final glowPaint = Paint()
+          ..color = AppTheme.teal400.withOpacity(0.4)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+        canvas.drawCircle(point, 16, glowPaint);
+      }
+
+      // White outer ring
+      final outerPaint = Paint()
+        ..color = isSelected ? AppTheme.teal400 : Colors.white.withOpacity(0.8)
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(point, isSelected ? 8 : 5, outerPaint);
+
+      // Inner dot
+      final innerPaint = Paint()
+        ..color = isSelected ? Colors.white : AppTheme.slate900
+        ..style = PaintingStyle.fill;
+      canvas.drawCircle(point, isSelected ? 4 : 2.5, innerPaint);
+    }
+
     // Draw labels
     final textPainter = TextPainter(
       textDirection: TextDirection.ltr,
     );
 
     for (var i = 0; i < data.length; i++) {
+      final isSelected = selectedIndex == i;
       textPainter.text = TextSpan(
         text: data[i].label,
-        style: const TextStyle(
-          color: AppTheme.slate500,
-          fontSize: 9,
-          fontWeight: FontWeight.bold,
+        style: TextStyle(
+          color: isSelected ? AppTheme.teal400 : AppTheme.slate500,
+          fontSize: isSelected ? 10 : 9,
+          fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
         ),
       );
       textPainter.layout();
@@ -208,6 +412,6 @@ class _GraphPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _GraphPainter oldDelegate) {
-    return oldDelegate.data != data;
+    return oldDelegate.data != data || oldDelegate.selectedIndex != selectedIndex;
   }
 }

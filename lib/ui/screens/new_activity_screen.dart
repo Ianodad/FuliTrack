@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
+import '../widgets/premium_widgets.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 
@@ -53,7 +55,12 @@ class _NewActivityScreenState extends ConsumerState<NewActivityScreen> {
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: GestureDetector(
-                      onTap: () => setState(() => _selectedFilter = filter),
+                      onTap: () {
+                        if (_selectedFilter != filter) {
+                          HapticFeedback.selectionClick();
+                          setState(() => _selectedFilter = filter);
+                        }
+                      },
                       child: AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
                         padding: const EdgeInsets.symmetric(
@@ -200,25 +207,25 @@ class _TransactionCard extends StatelessWidget {
       icon = Icons.percent_rounded;
     }
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: AppTheme.slate100),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          InkWell(
-            onTap: onTap,
-            borderRadius: BorderRadius.circular(24),
-            child: Padding(
+    return TappableCard(
+      onTap: onTap,
+      scaleFactor: 0.98,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppTheme.slate100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Padding(
               padding: const EdgeInsets.all(20),
               child: Row(
                 children: [
@@ -304,9 +311,8 @@ class _TransactionCard extends StatelessWidget {
                 ],
               ),
             ),
-          ),
 
-          // Expanded content
+            // Expanded content
           if (isExpanded)
             Container(
               padding: const EdgeInsets.all(20),

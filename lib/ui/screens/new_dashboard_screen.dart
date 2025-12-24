@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import '../widgets/usage_tank.dart';
 import '../widgets/fuli_graph.dart';
+import '../widgets/premium_widgets.dart';
 import '../../providers/providers.dart';
 import '../../models/models.dart';
 
@@ -38,9 +39,7 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
       backgroundColor: AppTheme.slate50,
       body: SafeArea(
         child: isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: AppTheme.teal600),
-              )
+            ? const DashboardSkeleton()
             : showEmptyState
                 ? _buildEmptyState(context)
                 : SingleChildScrollView(
@@ -521,6 +520,7 @@ class _SummaryCard extends StatelessWidget {
   final Color iconColor;
   final String? trend;
   final Color? trendColor;
+  final VoidCallback? onTap;
 
   const _SummaryCard({
     required this.label,
@@ -530,75 +530,79 @@ class _SummaryCard extends StatelessWidget {
     required this.iconColor,
     this.trend,
     this.trendColor,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: AppTheme.slate100),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w900,
-              color: AppTheme.slate400,
-              letterSpacing: 0.5,
+    return TappableCard(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(color: AppTheme.slate100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            amount,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              fontStyle: FontStyle.italic,
-              color: iconColor,
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w900,
+                color: AppTheme.slate400,
+                letterSpacing: 0.5,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              if (trend != null) ...[
-                Icon(icon, size: 10, color: trendColor),
-                const SizedBox(width: 4),
-                Text(
-                  trend!,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    color: trendColor,
+            const SizedBox(height: 8),
+            Text(
+              amount,
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                fontStyle: FontStyle.italic,
+                color: iconColor,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                if (trend != null) ...[
+                  Icon(icon, size: 10, color: trendColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    trend!,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: trendColor,
+                    ),
                   ),
-                ),
-              ] else ...[
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.slate400,
+                ] else ...[
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.slate400,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 4),
-                Icon(icon, size: 10, color: iconColor),
+                  const SizedBox(width: 4),
+                  Icon(icon, size: 10, color: iconColor),
+                ],
               ],
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }

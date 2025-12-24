@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
 import 'new_dashboard_screen.dart';
 import 'new_activity_screen.dart';
@@ -106,7 +107,13 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
     final isActive = _currentIndex == index;
 
     return GestureDetector(
-      onTap: () => setState(() => _currentIndex = index),
+      onTap: () {
+        if (_currentIndex != index) {
+          // Haptic feedback when switching tabs
+          HapticFeedback.lightImpact();
+          setState(() => _currentIndex = index);
+        }
+      },
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
@@ -117,14 +124,17 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutCubic,
-              transform: Matrix4.identity()..scale(isActive ? 1.1 : 1.0),
-              child: Icon(
-                icon,
-                size: 20,
-                color: isActive ? AppTheme.teal400 : AppTheme.slate500,
+            TweenAnimationBuilder<double>(
+              tween: Tween(begin: 1.0, end: isActive ? 1.15 : 1.0),
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutBack,
+              builder: (context, scale, child) => Transform.scale(
+                scale: scale,
+                child: Icon(
+                  icon,
+                  size: 20,
+                  color: isActive ? AppTheme.teal400 : AppTheme.slate500,
+                ),
               ),
             ),
             const SizedBox(height: 4),

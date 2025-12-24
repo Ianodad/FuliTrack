@@ -1,9 +1,11 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 
 /// UsageTank Component:
 /// Visualizes the ratio of used credit vs available limit.
 /// Uses a "liquid tank" metaphor with color-coded risk alerts (Teal vs Red).
+/// Features a subtle wave animation inside the liquid.
 class UsageTank extends StatefulWidget {
   final double spent;
   final double limit;
@@ -19,8 +21,9 @@ class UsageTank extends StatefulWidget {
 }
 
 class _UsageTankState extends State<UsageTank>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late AnimationController _controller;
+  late AnimationController _waveController;
   late Animation<double> _fillAnimation;
   late Animation<double> _pulseAnimation;
 
@@ -31,6 +34,12 @@ class _UsageTankState extends State<UsageTank>
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     );
+
+    // Wave animation controller - runs continuously
+    _waveController = AnimationController(
+      duration: const Duration(milliseconds: 2000),
+      vsync: this,
+    )..repeat();
 
     _fillAnimation = Tween<double>(
       begin: 0,
@@ -69,6 +78,7 @@ class _UsageTankState extends State<UsageTank>
   @override
   void dispose() {
     _controller.dispose();
+    _waveController.dispose();
     super.dispose();
   }
 
@@ -224,7 +234,7 @@ class _UsageTankState extends State<UsageTank>
 
   Widget _buildTank() {
     return AnimatedBuilder(
-      animation: _fillAnimation,
+      animation: Listenable.merge([_fillAnimation, _waveController]),
       builder: (context, child) {
         final fillHeight = _fillAnimation.value / 100;
 
@@ -250,42 +260,35 @@ class _UsageTankState extends State<UsageTank>
                   color: AppTheme.slate800,
                 ),
 
-                // Fill
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
+                // Fill with wave animation
+                SizedBox(
                   height: (128 - 16) * fillHeight,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.bottomCenter,
-                      end: Alignment.topCenter,
-                      colors: _isHigh
-                          ? [AppTheme.red600, AppTheme.amber500]
-                          : [AppTheme.teal600, AppTheme.emerald400],
+                  child: CustomPaint(
+                    painter: _WavePainter(
+                      wavePhase: _waveController.value,
+                      isHigh: _isHigh,
                     ),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Stack(
-                    children: [
-                      // Pulse highlight at top
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        child: AnimatedBuilder(
-                          animation: _pulseAnimation,
-                          builder: (context, child) => Container(
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color:
-                                  Colors.white.withOpacity(0.2 * _pulseAnimation.value),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    child: Container(),
                   ),
                 ),
+
+                // Pulse highlight at top of liquid
+                if (fillHeight > 0.05)
+                  Positioned(
+                    bottom: (128 - 16) * fillHeight - 8,
+                    left: 4,
+                    right: 4,
+                    child: AnimatedBuilder(
+                      animation: _pulseAnimation,
+                      builder: (context, child) => Container(
+                        height: 6,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.25 * _pulseAnimation.value),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
@@ -299,5 +302,90 @@ class _UsageTankState extends State<UsageTank>
       return '${(value / 1000).toStringAsFixed(1)}K';
     }
     return value.toStringAsFixed(0);
+  }
+}
+
+/// Custom painter for the wave animation inside the tank
+class _WavePainter extends CustomPainter {
+  final double wavePhase;
+  final bool isHigh;
+
+  _WavePainter({
+    required this.wavePhase,
+    required this.isHigh,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (size.height <= 0) return;
+
+    final paint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
+        colors: isHigh
+            ? [AppTheme.red600, AppTheme.amber500]
+            : [AppTheme.teal600, AppTheme.emerald400],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+
+    final path = Path();
+
+    // Start at bottom left
+    path.moveTo(0, size.height);
+
+    // Draw wave at the top
+    final waveHeight = 4.0;
+    final waveCount = 2.0;
+
+    for (double x = 0; x <= size.width; x++) {
+      final normalizedX = x / size.width;
+      final waveY = math.sin((normalizedX * waveCount * 2 * math.pi) + (wavePhase * 2 * math.pi)) * waveHeight;
+
+      if (x == 0) {
+        path.lineTo(x, waveY);
+      } else {
+        path.lineTo(x, waveY);
+      }
+    }
+
+    // Complete the path
+    path.lineTo(size.width, size.height);
+    path.close();
+
+    canvas.drawPath(path, paint);
+
+    // Draw a second, slightly offset wave for more depth
+    final paint2 = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.bottomCenter,
+        end: Alignment.topCenter,
+        colors: isHigh
+            ? [AppTheme.red600.withOpacity(0.5), AppTheme.amber500.withOpacity(0.5)]
+            : [AppTheme.teal600.withOpacity(0.5), AppTheme.emerald400.withOpacity(0.5)],
+      ).createShader(Rect.fromLTWH(0, 0, size.width, size.height));
+
+    final path2 = Path();
+    path2.moveTo(0, size.height);
+
+    for (double x = 0; x <= size.width; x++) {
+      final normalizedX = x / size.width;
+      final waveY = math.sin((normalizedX * waveCount * 2 * math.pi) + (wavePhase * 2 * math.pi) + math.pi * 0.5) * (waveHeight * 0.6) + 2;
+
+      if (x == 0) {
+        path2.lineTo(x, waveY);
+      } else {
+        path2.lineTo(x, waveY);
+      }
+    }
+
+    path2.lineTo(size.width, size.height);
+    path2.close();
+
+    canvas.drawPath(path2, paint2);
+  }
+
+  @override
+  bool shouldRepaint(covariant _WavePainter oldDelegate) {
+    return oldDelegate.wavePhase != wavePhase || oldDelegate.isHigh != isHigh;
   }
 }

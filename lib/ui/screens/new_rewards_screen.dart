@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
+import '../widgets/premium_widgets.dart';
 import '../../providers/providers.dart';
 
 /// Rewards screen with premium design - Rewards Vault
@@ -39,17 +40,13 @@ class NewRewardsScreen extends ConsumerWidget {
 
               const SizedBox(height: 32),
 
-              // Badges Section Header
+              // Badges Section Header with Gradient
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: Text(
-                  'YOUR BADGES',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w900,
-                    color: AppTheme.slate400,
-                    letterSpacing: 2,
-                  ),
+                child: GradientHeader(
+                  title: 'Your Badges',
+                  subtitle: 'Tap to view details',
+                  icon: Icons.workspace_premium_rounded,
                 ),
               ),
 
@@ -65,115 +62,133 @@ class NewRewardsScreen extends ConsumerWidget {
   }
 
   Widget _buildProgressCard() {
+    const progress = 0.43; // 43% progress
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.slate900,
-          borderRadius: BorderRadius.circular(40),
-          border: Border.all(
-            color: Colors.white.withOpacity(0.05),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+      child: TappableCard(
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppTheme.slate900,
+            borderRadius: BorderRadius.circular(40),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.05),
             ),
-          ],
-        ),
-        child: Stack(
-          children: [
-            // Glow effect
-            Positioned(
-              right: -24,
-              bottom: -24,
-              child: Container(
-                width: 128,
-                height: 128,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      AppTheme.teal500.withOpacity(0.2),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
-            ),
-
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        'MASTER MILESTONE',
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: FontWeight.w900,
-                          color: AppTheme.teal400,
-                          letterSpacing: 2,
-                        ),
-                      ),
-                      Icon(
-                        Icons.bolt,
-                        size: 16,
-                        color: AppTheme.amber500,
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'COST CUTTER II',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      fontStyle: FontStyle.italic,
-                      color: Colors.white,
-                      height: 1.1,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: AppTheme.slate800,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Stack(
-                      children: [
-                        FractionallySizedBox(
-                          widthFactor: 0.43,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [AppTheme.teal500, AppTheme.amber500],
-                              ),
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                          ),
-                        ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Glow effect
+              Positioned(
+                right: -24,
+                bottom: -24,
+                child: Container(
+                  width: 128,
+                  height: 128,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: RadialGradient(
+                      colors: [
+                        AppTheme.teal500.withOpacity(0.2),
+                        Colors.transparent,
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Reduce Fuliza by 50% this month (43% reached)',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.slate400,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Row(
+                  children: [
+                    // Progress Ring
+                    ProgressRing(
+                      progress: progress,
+                      size: 80,
+                      strokeWidth: 8,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            '${(progress * 100).toInt()}%',
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                            ),
+                          ),
+                          const Text(
+                            'DONE',
+                            style: TextStyle(
+                              fontSize: 8,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.slate500,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 20),
+
+                    // Text content
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'MASTER MILESTONE',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w900,
+                                  color: AppTheme.teal400,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                              Icon(
+                                Icons.bolt,
+                                size: 16,
+                                color: AppTheme.amber500,
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'COST CUTTER II',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              fontStyle: FontStyle.italic,
+                              color: Colors.white,
+                              height: 1.1,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Reduce Fuliza by 50% this month',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: AppTheme.slate400,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -269,89 +284,94 @@ class _BadgeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedOpacity(
-      duration: const Duration(milliseconds: 300),
-      opacity: badge.earned ? 1.0 : 0.3,
-      child: Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(32),
-          border: Border.all(color: AppTheme.slate100),
-          boxShadow: badge.earned
-              ? [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+    return TappableCard(
+      onTap: badge.earned ? () {
+        // Could show badge details
+      } : null,
+      child: AnimatedOpacity(
+        duration: const Duration(milliseconds: 300),
+        opacity: badge.earned ? 1.0 : 0.3,
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(32),
+            border: Border.all(color: AppTheme.slate100),
+            boxShadow: badge.earned
+                ? [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Icon
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: badge.earned ? AppTheme.teal50 : AppTheme.slate100,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: ColorFiltered(
+                  colorFilter: badge.earned
+                      ? const ColorFilter.mode(
+                          Colors.transparent, BlendMode.multiply)
+                      : const ColorFilter.matrix([
+                          0.2126, 0.7152, 0.0722, 0, 0,
+                          0.2126, 0.7152, 0.0722, 0, 0,
+                          0.2126, 0.7152, 0.0722, 0, 0,
+                          0, 0, 0, 1, 0,
+                        ]),
+                  child: Icon(
+                    badge.icon,
+                    size: 32,
+                    color: badge.iconColor,
                   ),
-                ]
-              : null,
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Icon
-            Container(
-              width: 72,
-              height: 72,
-              decoration: BoxDecoration(
-                color: badge.earned ? AppTheme.teal50 : AppTheme.slate100,
-                borderRadius: BorderRadius.circular(24),
-              ),
-              child: ColorFiltered(
-                colorFilter: badge.earned
-                    ? const ColorFilter.mode(
-                        Colors.transparent, BlendMode.multiply)
-                    : const ColorFilter.matrix([
-                        0.2126, 0.7152, 0.0722, 0, 0,
-                        0.2126, 0.7152, 0.0722, 0, 0,
-                        0.2126, 0.7152, 0.0722, 0, 0,
-                        0, 0, 0, 1, 0,
-                      ]),
-                child: Icon(
-                  badge.icon,
-                  size: 32,
-                  color: badge.iconColor,
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-            // Label
-            Text(
-              badge.label.toUpperCase(),
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w900,
-                color: AppTheme.slate800,
-                letterSpacing: 0.5,
-                height: 1.2,
-              ),
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 8),
-
-            // Level badge
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: badge.earned ? AppTheme.primaryTeal : AppTheme.slate200,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                badge.earned ? badge.level.toUpperCase() : 'LOCKED',
+              // Label
+              Text(
+                badge.label.toUpperCase(),
                 style: TextStyle(
-                  fontSize: 9,
+                  fontSize: 12,
                   fontWeight: FontWeight.w900,
-                  color: badge.earned ? Colors.white : AppTheme.slate500,
-                  letterSpacing: 1,
+                  color: AppTheme.slate800,
+                  letterSpacing: 0.5,
+                  height: 1.2,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 8),
+
+              // Level badge
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: badge.earned ? AppTheme.primaryTeal : AppTheme.slate200,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  badge.earned ? badge.level.toUpperCase() : 'LOCKED',
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.w900,
+                    color: badge.earned ? Colors.white : AppTheme.slate500,
+                    letterSpacing: 1,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
