@@ -339,7 +339,7 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
               const SizedBox(width: 16),
               Expanded(
                 child: _SummaryCard(
-                  label: 'REPAID MONTH',
+                  label: 'REPAID ${selectedPeriod.toUpperCase()}',
                   amount: currencyFormat.format(summary.totalRepaid),
                   subtitle: 'View logs',
                   icon: Icons.arrow_forward,
