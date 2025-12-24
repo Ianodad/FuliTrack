@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../theme/app_theme.dart';
 import '../../providers/providers.dart';
 
-/// Rewards screen with badges and progress
+/// Rewards screen with premium design - Rewards Vault
 class NewRewardsScreen extends ConsumerWidget {
   const NewRewardsScreen({super.key});
 
@@ -15,18 +15,21 @@ class NewRewardsScreen extends ConsumerWidget {
       backgroundColor: AppTheme.slate50,
       body: SafeArea(
         child: SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 120),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header
-              const Padding(
-                padding: EdgeInsets.all(16),
+              Padding(
+                padding: const EdgeInsets.all(24),
                 child: Text(
-                  'Rewards',
+                  'REWARDS VAULT',
                   style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.slate800,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    fontStyle: FontStyle.italic,
+                    color: AppTheme.slate900,
+                    letterSpacing: -0.5,
                   ),
                 ),
               ),
@@ -34,22 +37,23 @@ class NewRewardsScreen extends ConsumerWidget {
               // Progress Card
               _buildProgressCard(),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 32),
 
-              // Badges Section
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
+              // Badges Section Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: Text(
-                  'Your Badges',
+                  'YOUR BADGES',
                   style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.slate700,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                    color: AppTheme.slate400,
+                    letterSpacing: 2,
                   ),
                 ),
               ),
 
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
 
               // Badge Grid
               _buildBadgeGrid(rewards),
@@ -62,81 +66,124 @@ class NewRewardsScreen extends ConsumerWidget {
 
   Widget _buildProgressCard() {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Stack(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [AppTheme.teal600, AppTheme.teal800],
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppTheme.slate900,
+          borderRadius: BorderRadius.circular(40),
+          border: Border.all(
+            color: Colors.white.withOpacity(0.05),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.3),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Glow effect
+            Positioned(
+              right: -24,
+              bottom: -24,
+              child: Container(
+                width: 128,
+                height: 128,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      AppTheme.teal500.withOpacity(0.2),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
               ),
-              borderRadius: BorderRadius.circular(16),
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Progress to Next Badge',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white70,
+
+            Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'MASTER MILESTONE',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                          color: AppTheme.teal400,
+                          letterSpacing: 2,
+                        ),
+                      ),
+                      Icon(
+                        Icons.bolt,
+                        size: 16,
+                        color: AppTheme.amber500,
+                      ),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '43% Interest Reduction',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
+                  const SizedBox(height: 12),
+                  const Text(
+                    'COST CUTTER II',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.white,
+                      height: 1.1,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: 0.43,
-                    minHeight: 8,
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    valueColor: const AlwaysStoppedAnimation<Color>(AppTheme.teal100),
+                  const SizedBox(height: 16),
+                  Container(
+                    height: 12,
+                    decoration: BoxDecoration(
+                      color: AppTheme.slate800,
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: Stack(
+                      children: [
+                        FractionallySizedBox(
+                          widthFactor: 0.43,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [AppTheme.teal500, AppTheme.amber500],
+                              ),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Keep it up to unlock "Cost Cutter"',
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white60,
+                  const SizedBox(height: 12),
+                  Text(
+                    'Reduce Fuliza by 50% this month (43% reached)',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.slate400,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          Positioned(
-            right: -16,
-            bottom: -16,
-            child: Icon(
-              Icons.emoji_events,
-              size: 128,
-              color: Colors.white.withOpacity(0.1),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildBadgeGrid(List<dynamic> rewards) {
-    // Mock badges matching React design
     final badges = [
       _BadgeData(
         label: 'Smart Start',
-        icon: Icons.emoji_events,
+        icon: Icons.emoji_events_rounded,
         iconColor: AppTheme.bronzeColor,
         level: 'Bronze',
         earned: true,
@@ -144,39 +191,47 @@ class NewRewardsScreen extends ConsumerWidget {
       ),
       _BadgeData(
         label: 'Cost Cutter',
-        icon: Icons.trending_down,
-        iconColor: AppTheme.slate400,
+        icon: Icons.trending_down_rounded,
+        iconColor: AppTheme.teal500,
         level: 'Silver',
         earned: true,
         description: 'Reduced Fuliza interest by 25% in one month.',
       ),
       _BadgeData(
         label: 'Fuli Master',
-        icon: Icons.emoji_events,
-        iconColor: AppTheme.goldColor,
+        icon: Icons.emoji_events_rounded,
+        iconColor: AppTheme.slate400,
         level: 'Gold',
         earned: false,
         description: 'Keep interest below Ksh 50 for 3 months.',
       ),
       _BadgeData(
         label: 'Zero Week',
-        icon: Icons.local_fire_department,
-        iconColor: const Color(0xFFF97316),
+        icon: Icons.local_fire_department_rounded,
+        iconColor: AppTheme.orange500,
         level: 'Epic',
         earned: false,
         description: 'Zero Fuliza usage for 7 consecutive days.',
       ),
+      _BadgeData(
+        label: 'Debt Buster',
+        icon: Icons.bolt_rounded,
+        iconColor: AppTheme.emerald500,
+        level: 'Pro',
+        earned: true,
+        description: 'Repaid over Ksh 5,000 this month.',
+      ),
     ];
 
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 24),
       child: GridView.builder(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
           childAspectRatio: 0.85,
         ),
         itemCount: badges.length,
@@ -214,39 +269,40 @@ class _BadgeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: badge.earned ? 1.0 : 0.4,
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 300),
+      opacity: badge.earned ? 1.0 : 0.3,
       child: Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(32),
           border: Border.all(color: AppTheme.slate100),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.02),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          boxShadow: badge.earned
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.04),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ]
+              : null,
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Icon
             Container(
-              width: 64,
-              height: 64,
+              width: 72,
+              height: 72,
               decoration: BoxDecoration(
-                color: badge.earned ? AppTheme.slate50 : AppTheme.slate100,
-                borderRadius: BorderRadius.circular(32),
-                border: badge.earned
-                    ? Border.all(color: AppTheme.teal50, width: 2)
-                    : null,
+                color: badge.earned ? AppTheme.teal50 : AppTheme.slate100,
+                borderRadius: BorderRadius.circular(24),
               ),
               child: ColorFiltered(
                 colorFilter: badge.earned
-                    ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply)
+                    ? const ColorFilter.mode(
+                        Colors.transparent, BlendMode.multiply)
                     : const ColorFilter.matrix([
                         0.2126, 0.7152, 0.0722, 0, 0,
                         0.2126, 0.7152, 0.0722, 0, 0,
@@ -260,37 +316,38 @@ class _BadgeCard extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
 
             // Label
             Text(
-              badge.label,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+              badge.label.toUpperCase(),
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w900,
                 color: AppTheme.slate800,
+                letterSpacing: 0.5,
                 height: 1.2,
               ),
               textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
 
-            // Level
+            // Level badge
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: badge.earned ? AppTheme.teal100 : AppTheme.slate200,
+                color: badge.earned ? AppTheme.primaryTeal : AppTheme.slate200,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
-                badge.earned ? badge.level : 'LOCKED',
+                badge.earned ? badge.level.toUpperCase() : 'LOCKED',
                 style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.bold,
-                  color: badge.earned ? AppTheme.primaryTeal : AppTheme.slate500,
-                  letterSpacing: 0.5,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w900,
+                  color: badge.earned ? Colors.white : AppTheme.slate500,
+                  letterSpacing: 1,
                 ),
               ),
             ),

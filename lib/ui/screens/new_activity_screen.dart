@@ -5,7 +5,7 @@ import '../theme/app_theme.dart';
 import '../../models/models.dart';
 import '../../providers/providers.dart';
 
-/// Activity screen with transaction list and filters
+/// Activity screen with premium design and transaction list
 class NewActivityScreen extends ConsumerStatefulWidget {
   const NewActivityScreen({super.key});
 
@@ -28,70 +28,110 @@ class _NewActivityScreenState extends ConsumerState<NewActivityScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header
-            const Padding(
-              padding: EdgeInsets.all(16),
+            Padding(
+              padding: const EdgeInsets.all(24),
               child: Text(
-                'Activity',
+                'LOG HISTORY',
                 style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.slate800,
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  fontStyle: FontStyle.italic,
+                  color: AppTheme.slate900,
+                  letterSpacing: -0.5,
                 ),
               ),
             ),
 
             // Filters
             SizedBox(
-              height: 40,
+              height: 44,
               child: ListView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 children: ['All', 'Loan', 'Repayment', 'Interest'].map((filter) {
                   final isSelected = _selectedFilter == filter;
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(
-                      label: Text(
-                        '${filter}s',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: isSelected ? Colors.white : AppTheme.slate500,
+                    child: GestureDetector(
+                      onTap: () => setState(() => _selectedFilter = filter),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? AppTheme.primaryTeal
+                              : Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: isSelected
+                                ? AppTheme.primaryTeal
+                                : AppTheme.slate100,
+                            width: 2,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color:
+                                        AppTheme.primaryTeal.withOpacity(0.3),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Text(
+                          '${filter}s'.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1,
+                            color: isSelected
+                                ? Colors.white
+                                : AppTheme.slate400,
+                          ),
                         ),
                       ),
-                      selected: isSelected,
-                      onSelected: (_) => setState(() => _selectedFilter = filter),
-                      backgroundColor: Colors.white,
-                      selectedColor: AppTheme.primaryTeal,
-                      side: BorderSide(
-                        color: isSelected ? AppTheme.primaryTeal : AppTheme.slate200,
-                      ),
-                      showCheckmark: false,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                     ),
                   );
                 }).toList(),
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 24),
 
             // Transaction List
             Expanded(
               child: () {
                 final filtered = _filterEvents(events);
                 if (filtered.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'No transactions found',
-                      style: TextStyle(color: AppTheme.slate400),
+                  return Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.receipt_long_outlined,
+                          size: 48,
+                          color: AppTheme.slate300,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'No transactions found',
+                          style: TextStyle(
+                            color: AppTheme.slate400,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 }
                 return ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
                   itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {
                     final event = filtered[index];
                     return _TransactionCard(
@@ -105,6 +145,9 @@ class _NewActivityScreenState extends ConsumerState<NewActivityScreen> {
                 );
               }(),
             ),
+
+            // Bottom padding for floating nav
+            const SizedBox(height: 100),
           ],
         ),
       ),
@@ -132,12 +175,12 @@ class _TransactionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormat = NumberFormat.currency(symbol: 'Ksh ', decimalDigits: 2);
+    final currencyFormat =
+        NumberFormat.currency(symbol: 'Ksh ', decimalDigits: 2);
     final dateFormat = DateFormat('dd MMM yyyy');
 
     final isLoan = event.type == FulizaEventType.loan;
     final isRepayment = event.type == FulizaEventType.repayment;
-    final isInterest = event.type == FulizaEventType.interest;
 
     Color iconBg;
     Color iconColor;
@@ -146,30 +189,37 @@ class _TransactionCard extends StatelessWidget {
     if (isLoan) {
       iconBg = AppTheme.amber50;
       iconColor = AppTheme.secondaryAmber;
-      icon = Icons.arrow_downward;
+      icon = Icons.arrow_downward_rounded;
     } else if (isRepayment) {
-      iconBg = const Color(0xFFDCFCE7);
-      iconColor = AppTheme.successGreen;
-      icon = Icons.arrow_upward;
+      iconBg = AppTheme.teal50;
+      iconColor = AppTheme.teal600;
+      icon = Icons.arrow_upward_rounded;
     } else {
       iconBg = AppTheme.amber50;
       iconColor = AppTheme.secondaryAmber;
-      icon = Icons.percent;
+      icon = Icons.percent_rounded;
     }
 
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppTheme.slate100),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.02),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         children: [
           InkWell(
             onTap: onTap,
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(24),
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(20),
               child: Row(
                 children: [
                   // Icon
@@ -178,7 +228,7 @@ class _TransactionCard extends StatelessWidget {
                     height: 48,
                     decoration: BoxDecoration(
                       color: iconBg,
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     child: Icon(icon, color: iconColor, size: 20),
                   ),
@@ -194,17 +244,19 @@ class _TransactionCard extends StatelessWidget {
                           children: [
                             Text(
                               event.type.name.toUpperCase(),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w900,
                                 color: AppTheme.slate800,
+                                letterSpacing: 0.5,
                               ),
                             ),
                             Text(
                               currencyFormat.format(event.amount),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 14,
-                                fontWeight: FontWeight.bold,
+                                fontWeight: FontWeight.w900,
+                                fontStyle: FontStyle.italic,
                                 color: AppTheme.slate900,
                               ),
                             ),
@@ -216,18 +268,20 @@ class _TransactionCard extends StatelessWidget {
                           children: [
                             Text(
                               dateFormat.format(event.date),
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10,
+                                fontWeight: FontWeight.bold,
                                 color: AppTheme.slate400,
+                                letterSpacing: 0.5,
                               ),
                             ),
                             if (isLoan && event.amount > 0)
                               Text(
                                 'Interest: ${currencyFormat.format(event.amount * 0.01)}',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontSize: 10,
-                                  color: AppTheme.secondaryAmber,
-                                  fontWeight: FontWeight.w500,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppTheme.amber500,
                                 ),
                               ),
                           ],
@@ -241,10 +295,10 @@ class _TransactionCard extends StatelessWidget {
                   AnimatedRotation(
                     turns: isExpanded ? 0.5 : 0,
                     duration: const Duration(milliseconds: 200),
-                    child: const Icon(
-                      Icons.keyboard_arrow_down,
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
                       color: AppTheme.slate300,
-                      size: 20,
+                      size: 18,
                     ),
                   ),
                 ],
@@ -255,43 +309,72 @@ class _TransactionCard extends StatelessWidget {
           // Expanded content
           if (isExpanded)
             Container(
-              padding: const EdgeInsets.all(16),
-              decoration: const BoxDecoration(
-                color: Color(0xFFFAFAFA),
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppTheme.slate50,
                 border: Border(
-                  top: BorderSide(color: AppTheme.slate50),
+                  top: BorderSide(color: AppTheme.slate100),
                 ),
-                borderRadius: BorderRadius.vertical(
-                  bottom: Radius.circular(16),
+                borderRadius: const BorderRadius.vertical(
+                  bottom: Radius.circular(24),
                 ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'REF: ${event.reference}',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w500,
-                      color: AppTheme.slate500,
-                      letterSpacing: 0.5,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'REFERENCE: ${event.reference}',
+                        style: TextStyle(
+                          fontSize: 9,
+                          fontWeight: FontWeight.w900,
+                          color: AppTheme.slate400,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          // Copy reference
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: const Text('Reference copied'),
+                              backgroundColor: AppTheme.slate800,
+                              behavior: SnackBarBehavior.floating,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                          );
+                        },
+                        child: Text(
+                          'COPY REF',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w900,
+                            color: AppTheme.teal600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 12),
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
                       color: Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppTheme.slate100),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: AppTheme.slate200),
                     ),
                     child: Text(
                       '"${event.rawSms.length > 150 ? event.rawSms.substring(0, 150) + '...' : event.rawSms}"',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 10,
                         color: AppTheme.slate500,
                         fontStyle: FontStyle.italic,
-                        height: 1.4,
+                        height: 1.5,
                       ),
                     ),
                   ),

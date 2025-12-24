@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../theme/app_theme.dart';
 
-/// Permission screen for requesting SMS access
+/// Permission screen with premium dark theme for requesting SMS access
 class PermissionScreen extends StatelessWidget {
   final VoidCallback onGranted;
 
@@ -11,10 +11,10 @@ class PermissionScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppTheme.slate950,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 48),
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 48),
           child: Column(
             children: [
               // Content
@@ -23,71 +23,81 @@ class PermissionScreen extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Icon
-                    Stack(
-                      alignment: Alignment.center,
-                      children: [
-                        Container(
-                          width: 120,
-                          height: 120,
-                          decoration: BoxDecoration(
-                            color: AppTheme.teal100.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(60),
-                          ),
+                    Container(
+                      width: 180,
+                      height: 180,
+                      decoration: BoxDecoration(
+                        color: AppTheme.teal500.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(60),
+                        border: Border.all(
+                          color: AppTheme.teal500.withOpacity(0.2),
+                          width: 2,
                         ),
-                        const Icon(
-                          Icons.message_outlined,
-                          size: 96,
-                          color: AppTheme.teal100,
-                        ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(24),
-                            ),
-                            child: const Icon(
-                              Icons.shield_outlined,
-                              size: 48,
-                              color: AppTheme.teal600,
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
+                      child: const Icon(
+                        Icons.message_rounded,
+                        size: 80,
+                        color: AppTheme.teal500,
+                      ),
                     ),
                     const SizedBox(height: 48),
                     const Text(
-                      'Allow SMS access',
+                      'Grant Access',
                       style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.slate900,
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        fontStyle: FontStyle.italic,
+                        color: Colors.white,
+                        height: 1.2,
                       ),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 16),
-                    RichText(
+                    Text(
+                      'To calculate your interest and limits, FuliTrack needs to read M-PESA transaction messages.',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: AppTheme.slate400,
+                        height: 1.6,
+                      ),
                       textAlign: TextAlign.center,
-                      text: const TextSpan(
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: AppTheme.slate500,
-                          height: 1.5,
+                    ),
+                    const SizedBox(height: 32),
+
+                    // Privacy info card
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppTheme.slate900,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.05),
                         ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          TextSpan(
-                            text: 'FuliTrack reads only M-PESA messages to calculate Fuliza usage.\n\n',
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: AppTheme.teal500.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              Icons.shield_outlined,
+                              color: AppTheme.teal400,
+                              size: 20,
+                            ),
                           ),
-                          TextSpan(
-                            text: 'Your data never leaves your phone.',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: AppTheme.slate700,
-                              decoration: TextDecoration.underline,
-                              decorationColor: AppTheme.teal100,
-                              decorationThickness: 4,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Only SMS from MPESA are read. No personal messages, contacts, or photos are accessed.',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.slate300,
+                                height: 1.5,
+                              ),
                             ),
                           ),
                         ],
@@ -97,65 +107,31 @@ class PermissionScreen extends StatelessWidget {
                 ),
               ),
 
-              // Buttons
-              Column(
-                children: [
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: ElevatedButton(
-                      onPressed: () => _requestPermission(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.primaryTeal,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text(
-                        'Allow SMS Access',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+              // Button
+              SizedBox(
+                width: double.infinity,
+                height: 60,
+                child: ElevatedButton(
+                  onPressed: () => _requestPermission(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppTheme.teal600,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shadowColor: AppTheme.teal900.withOpacity(0.4),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: TextButton(
-                      onPressed: () {
-                        // Show info dialog
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Why SMS Access?'),
-                            content: const Text(
-                              'FuliTrack needs to read M-PESA SMS messages to automatically track your Fuliza loans, interest charges, and repayments.\n\n'
-                              'Your data is processed entirely on your device and never sent to any server. The app works completely offline.',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('Got it'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        'Learn more',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: AppTheme.slate500,
-                        ),
-                      ),
+                  child: const Text(
+                    'ALLOW SMS ACCESS',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w900,
+                      fontStyle: FontStyle.italic,
+                      letterSpacing: 2,
                     ),
                   ),
-                ],
+                ),
               ),
             ],
           ),
@@ -172,23 +148,39 @@ class PermissionScreen extends StatelessWidget {
     if (status.isGranted) {
       onGranted();
     } else if (status.isDenied) {
-      // Show dialog explaining why permission is needed
       final shouldRetry = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('SMS Permission Required'),
-          content: const Text(
+          backgroundColor: AppTheme.slate900,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            'SMS Permission Required',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
             'FuliTrack needs access to your SMS messages to automatically '
             'track Fuliza transactions from M-PESA. We only read Fuliza-related '
             'messages and never send any data to servers.',
+            style: TextStyle(color: AppTheme.slate300),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Skip for now'),
+              child: Text(
+                'Skip for now',
+                style: TextStyle(color: AppTheme.slate400),
+              ),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.teal600,
+              ),
               child: const Text('Try again'),
             ),
           ],
@@ -201,22 +193,38 @@ class PermissionScreen extends StatelessWidget {
         onGranted();
       }
     } else if (status.isPermanentlyDenied) {
-      // Open app settings
       final shouldOpenSettings = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Permission Denied'),
-          content: const Text(
+          backgroundColor: AppTheme.slate900,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            'Permission Denied',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
             'SMS permission was denied. Please enable it in app settings '
             'to automatically track Fuliza transactions.',
+            style: TextStyle(color: AppTheme.slate300),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text('Skip'),
+              child: Text(
+                'Skip',
+                style: TextStyle(color: AppTheme.slate400),
+              ),
             ),
             FilledButton(
               onPressed: () => Navigator.pop(context, true),
+              style: FilledButton.styleFrom(
+                backgroundColor: AppTheme.teal600,
+              ),
               child: const Text('Open Settings'),
             ),
           ],

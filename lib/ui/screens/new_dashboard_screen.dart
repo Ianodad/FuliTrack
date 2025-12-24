@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
+import '../widgets/usage_tank.dart';
+import '../widgets/fuli_graph.dart';
 import '../../providers/providers.dart';
 import '../../models/models.dart';
 
-/// Dashboard screen with summary cards and insights
+/// Dashboard screen with premium dark theme and UsageTank
 class NewDashboardScreen extends ConsumerStatefulWidget {
   const NewDashboardScreen({super.key});
 
@@ -21,8 +23,7 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
     final isLoading = ref.watch(fulizaProvider).isLoading;
     final currentFilter = ref.watch(fulizaFilterProvider);
 
-    // Derive selected period from provider filter state
-    final _selectedPeriod = switch (currentFilter) {
+    final selectedPeriod = switch (currentFilter) {
       DateFilter.thisWeek => 'Week',
       DateFilter.thisMonth => 'Month',
       DateFilter.thisYear => 'Year',
@@ -30,154 +31,324 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
       DateFilter.custom => 'All',
     };
 
-    // Get total event count to determine if there's ANY data in database
     final totalEventCount = ref.watch(fulizaProvider).totalEventCount;
-
-    // Show empty state ONLY when there's truly no data in database at all
     final showEmptyState = totalEventCount == 0;
 
     return Scaffold(
       backgroundColor: AppTheme.slate50,
       body: SafeArea(
         child: isLoading
-            ? const Center(child: CircularProgressIndicator())
+            ? const Center(
+                child: CircularProgressIndicator(color: AppTheme.teal600),
+              )
             : showEmptyState
                 ? _buildEmptyState(context)
                 : SingleChildScrollView(
+                    padding: const EdgeInsets.only(bottom: 120),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Header
-                        Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'FuliTrack',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.bold,
-                                  color: AppTheme.slate800,
-                                ),
-                              ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: AppTheme.teal50,
-                                  borderRadius: BorderRadius.circular(20),
-                                ),
-                                child: const Text(
-                                  'PRO-FREE',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                    color: AppTheme.primaryTeal,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        _buildHeader(),
 
-                        // Fuliza Limit Card
-                        _buildLimitCard(),
+                        const SizedBox(height: 24),
 
-                        const SizedBox(height: 16),
+                        // Usage Tank
+                        _buildUsageTank(),
+
+                        const SizedBox(height: 24),
+
+                        // Period Selector
+                        _buildPeriodSelector(selectedPeriod),
+
+                        const SizedBox(height: 24),
+
+                        // Graph
+                        _buildGraph(events, selectedPeriod),
+
+                        const SizedBox(height: 24),
 
                         // Summary Cards
-                        _buildSummaryCards(summary, _selectedPeriod),
-
-              const SizedBox(height: 24),
-
-              // Period Selector
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: AppTheme.slate100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: ['Week', 'Month', 'Year', 'All'].map((period) {
-                      final isSelected = _selectedPeriod == period;
-                      return Expanded(
-                        child: GestureDetector(
-                          onTap: () {
-                            final filter = period == 'Week'
-                                ? DateFilter.thisWeek
-                                : period == 'Month'
-                                    ? DateFilter.thisMonth
-                                    : period == 'Year'
-                                        ? DateFilter.thisYear
-                                        : DateFilter.allTime;
-                            ref.read(fulizaProvider.notifier).setFilter(filter);
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            decoration: BoxDecoration(
-                              color: isSelected ? Colors.white : Colors.transparent,
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: isSelected
-                                  ? [
-                                      BoxShadow(
-                                        color: Colors.black.withOpacity(0.05),
-                                        blurRadius: 4,
-                                        offset: const Offset(0, 2),
-                                      ),
-                                    ]
-                                  : null,
-                            ),
-                            child: Text(
-                              period,
-                              textAlign: TextAlign.center,
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w600,
-                                color: isSelected ? AppTheme.primaryTeal : AppTheme.slate500,
-                              ),
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 24),
-
-              // Insight Card
-              _buildInsightCard(summary, _selectedPeriod),
-
-              const SizedBox(height: 24),
-
-              // Mini Chart
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Interest Over Time',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.slate700,
-                      ),
+                        _buildSummaryCards(summary, selectedPeriod),
+                      ],
                     ),
-                    const SizedBox(height: 12),
-                    _buildMiniChart(_selectedPeriod),
-                  ],
+                  ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'FULITRACK',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w900,
+                  fontStyle: FontStyle.italic,
+                  color: AppTheme.slate900,
+                  letterSpacing: -0.5,
                 ),
               ),
-
-              const SizedBox(height: 24),
+              const SizedBox(height: 2),
+              Text(
+                'LIVE PULSE',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.teal600,
+                  letterSpacing: 2,
+                ),
+              ),
             ],
           ),
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.slate100),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.02),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.notifications_outlined,
+                  size: 18,
+                  color: AppTheme.slate600,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: AppTheme.primaryTeal,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Colors.white,
+                    width: 2,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.primaryTeal.withOpacity(0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: const Center(
+                  child: Text(
+                    'FT',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w900,
+                      fontStyle: FontStyle.italic,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUsageTank() {
+    final currentLimit = ref.watch(fulizaLimitProvider);
+    final summary = ref.watch(fulizaSummaryProvider);
+
+    final limit = currentLimit?.limit ?? 5000.0;
+    final spent = summary.outstandingBalance;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: UsageTank(
+        spent: spent,
+        limit: limit,
+      ),
+    );
+  }
+
+  Widget _buildPeriodSelector(String selectedPeriod) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        padding: const EdgeInsets.all(6),
+        decoration: BoxDecoration(
+          color: AppTheme.slate200.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(16),
         ),
+        child: Row(
+          children: ['Week', 'Month', 'Year', 'All'].map((period) {
+            final isSelected = selectedPeriod == period;
+            return Expanded(
+              child: GestureDetector(
+                onTap: () {
+                  final filter = period == 'Week'
+                      ? DateFilter.thisWeek
+                      : period == 'Month'
+                          ? DateFilter.thisMonth
+                          : period == 'Year'
+                              ? DateFilter.thisYear
+                              : DateFilter.allTime;
+                  ref.read(fulizaProvider.notifier).setFilter(filter);
+                },
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 200),
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  decoration: BoxDecoration(
+                    color:
+                        isSelected ? AppTheme.primaryTeal : Colors.transparent,
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: isSelected
+                        ? [
+                            BoxShadow(
+                              color: AppTheme.primaryTeal.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
+                            ),
+                          ]
+                        : null,
+                  ),
+                  child: Text(
+                    period.toUpperCase(),
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1,
+                      color: isSelected ? Colors.white : AppTheme.slate400,
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGraph(List<FulizaEvent> events, String selectedPeriod) {
+    // Calculate chart data based on events
+    final chartData = _calculateChartData(events, selectedPeriod);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: FuliGraph(data: chartData),
+    );
+  }
+
+  List<FuliGraphData> _calculateChartData(
+    List<FulizaEvent> events,
+    String selectedPeriod,
+  ) {
+    final now = DateTime.now();
+    final data = <FuliGraphData>[];
+
+    if (selectedPeriod == 'Week') {
+      // Last 7 days
+      final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      for (int i = 6; i >= 0; i--) {
+        final date = now.subtract(Duration(days: i));
+        final dayEvents = events.where((e) =>
+            e.date.year == date.year &&
+            e.date.month == date.month &&
+            e.date.day == date.day &&
+            e.type == FulizaEventType.interest);
+        final total =
+            dayEvents.fold<double>(0, (sum, e) => sum + e.amount);
+        data.add(FuliGraphData(
+          label: days[date.weekday - 1],
+          value: total,
+        ));
+      }
+    } else if (selectedPeriod == 'Month') {
+      // Last 4 weeks
+      for (int i = 3; i >= 0; i--) {
+        final weekStart = now.subtract(Duration(days: i * 7 + 6));
+        final weekEnd = now.subtract(Duration(days: i * 7));
+        final weekEvents = events.where((e) =>
+            e.date.isAfter(weekStart) &&
+            e.date.isBefore(weekEnd.add(const Duration(days: 1))) &&
+            e.type == FulizaEventType.interest);
+        final total =
+            weekEvents.fold<double>(0, (sum, e) => sum + e.amount);
+        data.add(FuliGraphData(
+          label: 'W${4 - i}',
+          value: total,
+        ));
+      }
+    } else {
+      // Last 6 months
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      for (int i = 5; i >= 0; i--) {
+        final month = DateTime(now.year, now.month - i, 1);
+        final monthEvents = events.where((e) =>
+            e.date.year == month.year &&
+            e.date.month == month.month &&
+            e.type == FulizaEventType.interest);
+        final total =
+            monthEvents.fold<double>(0, (sum, e) => sum + e.amount);
+        data.add(FuliGraphData(
+          label: months[month.month - 1],
+          value: total,
+        ));
+      }
+    }
+
+    return data;
+  }
+
+  Widget _buildSummaryCards(FulizaSummary summary, String selectedPeriod) {
+    final currencyFormat = NumberFormat.currency(symbol: 'Ksh ', decimalDigits: 2);
+    final subtitleText = selectedPeriod == 'All' ? 'All time' : 'This $selectedPeriod';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: _SummaryCard(
+                  label: 'INTEREST PAID',
+                  amount: currencyFormat.format(summary.totalInterest),
+                  subtitle: subtitleText,
+                  icon: Icons.trending_down,
+                  iconColor: AppTheme.amber600,
+                  trend: '32% Down',
+                  trendColor: AppTheme.teal600,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: _SummaryCard(
+                  label: 'REPAID MONTH',
+                  amount: currencyFormat.format(summary.totalRepaid),
+                  subtitle: 'View logs',
+                  icon: Icons.arrow_forward,
+                  iconColor: AppTheme.slate400,
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
@@ -232,470 +403,12 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryTeal,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildLimitCard() {
-    final currentLimit = ref.watch(fulizaLimitProvider);
-    final limitIncreases = ref.watch(fulizaLimitIncreasesProvider);
-    final currencyFormat = NumberFormat.currency(symbol: 'Ksh ', decimalDigits: 0);
-
-    if (currentLimit == null) {
-      return const SizedBox.shrink();
-    }
-
-    // Get last increase info
-    String increaseInfo = '';
-    if (limitIncreases.isNotEmpty) {
-      final lastIncrease = limitIncreases.last;
-      if (lastIncrease.previousLimit != null && lastIncrease.previousLimit! > 0) {
-        final increase = lastIncrease.limit - lastIncrease.previousLimit!;
-        if (increase > 0) {
-          increaseInfo = '+${currencyFormat.format(increase)}';
-        }
-      }
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppTheme.slate800, AppTheme.slate900],
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(
-                Icons.credit_card,
-                color: Colors.white,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Fuliza Limit',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.white70,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    currencyFormat.format(currentLimit.limit),
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            if (increaseInfo.isNotEmpty)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: AppTheme.successGreen.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(
-                      Icons.trending_up,
-                      color: AppTheme.successGreen,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      increaseInfo,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
-                        color: AppTheme.successGreen,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            if (limitIncreases.length > 1)
-              Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: GestureDetector(
-                  onTap: () => _showLimitHistory(limitIncreases),
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.history,
-                      color: Colors.white70,
-                      size: 18,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showLimitHistory(List<FulizaLimit> increases) {
-    final currencyFormat = NumberFormat.currency(symbol: 'Ksh ', decimalDigits: 0);
-    final dateFormat = DateFormat('MMM yyyy');
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return Container(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Limit History',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppTheme.slate800,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '${increases.length} limit increases',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppTheme.slate500,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ...increases.reversed.take(5).map((limit) {
-                final increase = limit.previousLimit != null
-                    ? limit.limit - limit.previousLimit!
-                    : 0.0;
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: AppTheme.primaryTeal,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              currencyFormat.format(limit.limit),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: AppTheme.slate800,
-                              ),
-                            ),
-                            Text(
-                              dateFormat.format(limit.date),
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: AppTheme.slate500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      if (increase > 0)
-                        Text(
-                          '+${currencyFormat.format(increase)}',
-                          style: const TextStyle(
-                            color: AppTheme.successGreen,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                    ],
-                  ),
-                );
-              }),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildSummaryCards(FulizaSummary summary, String selectedPeriod) {
-    final currencyFormat = NumberFormat.currency(symbol: 'Ksh ', decimalDigits: 2);
-
-    final fulizaUsed = summary.totalLoaned;
-    final interestPaid = summary.totalInterest;
-    final outstanding = summary.outstandingBalance;
-
-    final subtitleText = selectedPeriod == 'All' ? 'All time' : 'This $selectedPeriod';
-
-    return SizedBox(
-      height: 120,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        children: [
-          _SummaryCard(
-            label: 'Fuliza used',
-            amount: currencyFormat.format(fulizaUsed),
-            subtitle: subtitleText,
-            color: AppTheme.slate900,
-          ),
-          const SizedBox(width: 12),
-          _SummaryCard(
-            label: 'Interest paid',
-            amount: currencyFormat.format(interestPaid),
-            subtitle: 'Avoidable cost',
-            color: AppTheme.secondaryAmber,
-          ),
-          const SizedBox(width: 12),
-          _SummaryCard(
-            label: 'Outstanding',
-            amount: currencyFormat.format(outstanding),
-            subtitle: 'Repay soon',
-            color: AppTheme.errorRed,
-            subtitleColor: AppTheme.errorRed,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInsightCard(FulizaSummary summary, String selectedPeriod) {
-    // Don't show insight card if no data
-    if (summary.totalInterest == 0 && summary.totalLoaned == 0) {
-      return const SizedBox();
-    }
-
-    final currencyFormat = NumberFormat.currency(symbol: 'Ksh ', decimalDigits: 2);
-
-    // Format the period text
-    String periodText = selectedPeriod == 'All'
-        ? 'all time'
-        : 'this $selectedPeriod'.toLowerCase();
-
-    // Simple insight message based on available data
-    String mainMessage;
-    if (summary.totalInterest > 0) {
-      mainMessage = 'You paid ${currencyFormat.format(summary.totalInterest)} in Fuliza interest $periodText.';
-    } else {
-      mainMessage = 'No Fuliza interest charged $periodText. Great job!';
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppTheme.teal600, AppTheme.teal800],
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(
-                summary.totalInterest > 0 ? Icons.info_outline : Icons.celebration_outlined,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    mainMessage,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w500,
-                      color: Colors.white,
-                      height: 1.4,
-                    ),
-                  ),
-                  if (summary.outstandingBalance > 0) ...[
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.warning_amber_rounded,
-                          color: AppTheme.teal100,
-                          size: 12,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            'Outstanding balance: ${currencyFormat.format(summary.outstandingBalance)}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMiniChart(String selectedPeriod) {
-    final events = ref.watch(fulizaProvider).events;
-
-    // Calculate interest by period (last 7 days/weeks depending on selection)
-    final now = DateTime.now();
-    final chartData = <double>[];
-    final maxBars = 7;
-
-    // Debug: Count interest events
-    final interestEvents = events.where((e) => e.type == FulizaEventType.interest).toList();
-    debugPrint('📊 Mini chart: ${interestEvents.length} interest events in state');
-
-    if (events.isEmpty) {
-      // Show empty bars if no data
-      for (int i = 0; i < maxBars; i++) {
-        chartData.add(0);
-      }
-    } else {
-      // Group events by day/week and calculate interest
-      for (int i = maxBars - 1; i >= 0; i--) {
-        DateTime periodStart;
-        DateTime periodEnd;
-
-        if (selectedPeriod == 'Week') {
-          // Last 7 weeks - each bar is a week
-          final weeksAgo = i;
-          periodEnd = DateTime(now.year, now.month, now.day)
-              .subtract(Duration(days: weeksAgo * 7));
-          periodStart = periodEnd.subtract(const Duration(days: 6));
-        } else if (selectedPeriod == 'Year' || selectedPeriod == 'All') {
-          // Last 7 months - each bar is a month (same for Year and All)
-          final targetMonth = DateTime(now.year, now.month - i, 1);
-          periodStart = DateTime(targetMonth.year, targetMonth.month, 1);
-          // End of month: first day of next month minus 1 day
-          periodEnd = DateTime(targetMonth.year, targetMonth.month + 1, 0, 23, 59, 59);
-        } else {
-          // Last 7 days (default for Month view)
-          periodStart = DateTime(now.year, now.month, now.day - i);
-          periodEnd = DateTime(now.year, now.month, now.day - i, 23, 59, 59);
-        }
-
-        final periodEvents = events.where((event) {
-          final afterOrOnStart = event.date.isAfter(periodStart) ||
-              (event.date.year == periodStart.year &&
-                  event.date.month == periodStart.month &&
-                  event.date.day == periodStart.day);
-          final beforeOrOnEnd = event.date.isBefore(periodEnd) ||
-              (event.date.year == periodEnd.year &&
-                  event.date.month == periodEnd.month &&
-                  event.date.day == periodEnd.day);
-          return afterOrOnStart && beforeOrOnEnd && event.type == FulizaEventType.interest;
-        });
-
-        final totalInterest = periodEvents.fold<double>(
-          0,
-          (sum, event) => sum + event.amount,
-        );
-
-        chartData.add(totalInterest);
-      }
-
-      debugPrint('📊 Chart data: $chartData');
-    }
-
-    // Normalize heights (0 to 1)
-    final maxValue = chartData.reduce((a, b) => a > b ? a : b);
-    final heights = maxValue > 0
-        ? chartData.map((value) => value / maxValue).toList()
-        : chartData.map((value) => 0.2).toList();
-
-    return Container(
-      height: 128,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppTheme.slate100),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: heights.asMap().entries.map((entry) {
-          final index = entry.key;
-          final height = entry.value;
-          final isLast = index == heights.length - 1;
-
-          return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: AnimatedContainer(
-                duration: Duration(milliseconds: 500 + (index * 100)),
-                height: height > 0 ? 96 * height : 4,
-                decoration: BoxDecoration(
-                  color: isLast ? AppTheme.teal600 : AppTheme.slate200,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
       ),
     );
   }
@@ -705,59 +418,86 @@ class _SummaryCard extends StatelessWidget {
   final String label;
   final String amount;
   final String subtitle;
-  final Color color;
-  final Color? subtitleColor;
+  final IconData icon;
+  final Color iconColor;
+  final String? trend;
+  final Color? trendColor;
 
   const _SummaryCard({
     required this.label,
     required this.amount,
     required this.subtitle,
-    required this.color,
-    this.subtitleColor,
+    required this.icon,
+    required this.iconColor,
+    this.trend,
+    this.trendColor,
   });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 160,
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(32),
         border: Border.all(color: AppTheme.slate100),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 12,
-              color: AppTheme.slate500,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w900,
+              color: AppTheme.slate400,
+              letterSpacing: 0.5,
             ),
           ),
+          const SizedBox(height: 8),
           Text(
             amount,
             style: TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: color,
+              fontWeight: FontWeight.w900,
+              fontStyle: FontStyle.italic,
+              color: iconColor,
             ),
           ),
-          Text(
-            subtitle,
-            style: TextStyle(
-              fontSize: 10,
-              color: subtitleColor ?? AppTheme.slate400,
-            ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              if (trend != null) ...[
+                Icon(Icons.trending_down, size: 10, color: trendColor),
+                const SizedBox(width: 4),
+                Text(
+                  trend!,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: trendColor,
+                  ),
+                ),
+              ] else ...[
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.slate400,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(icon, size: 10, color: iconColor),
+              ],
+            ],
           ),
         ],
       ),
