@@ -24,8 +24,8 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
     final currentFilter = ref.watch(fulizaFilterProvider);
 
     final selectedPeriod = switch (currentFilter) {
-      DateFilter.thisWeek => 'Week',
-      DateFilter.thisMonth => 'Month',
+      DateFilter.thisWeek => 'All',
+      DateFilter.thisMonth => 'Monthly',
       DateFilter.thisYear => 'Year',
       DateFilter.allTime => 'All',
       DateFilter.custom => 'All',
@@ -194,18 +194,16 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
-          children: ['Week', 'Month', 'Year', 'All'].map((period) {
+          children: ['All', 'Monthly', 'Year'].map((period) {
             final isSelected = selectedPeriod == period;
             return Expanded(
               child: GestureDetector(
                 onTap: () {
-                  final filter = period == 'Week'
-                      ? DateFilter.thisWeek
-                      : period == 'Month'
-                          ? DateFilter.thisMonth
-                          : period == 'Year'
-                              ? DateFilter.thisYear
-                              : DateFilter.allTime;
+                  final filter = period == 'Monthly'
+                      ? DateFilter.thisMonth
+                      : period == 'Year'
+                          ? DateFilter.thisYear
+                          : DateFilter.allTime;
                   ref.read(fulizaProvider.notifier).setFilter(filter);
                 },
                 child: AnimatedContainer(
@@ -261,52 +259,63 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
     final now = DateTime.now();
     final data = <FuliGraphData>[];
 
-    if (selectedPeriod == 'Week') {
-      // Last 7 days
-      final days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-      for (int i = 6; i >= 0; i--) {
-        final date = now.subtract(Duration(days: i));
-        final dayEvents = events.where((e) =>
-            e.date.year == date.year &&
-            e.date.month == date.month &&
-            e.date.day == date.day &&
-            e.type == FulizaEventType.interest);
-        final total =
-            dayEvents.fold<double>(0, (sum, e) => sum + e.amount);
+    if (selectedPeriod == 'Monthly') {
+      // Current month broken into 4 weeks
+      final monthStart = DateTime(now.year, now.month, 1);
+
+      for (int week = 1; week <= 4; week++) {
+        final weekStart = monthStart.add(Duration(days: (week - 1) * 7));
+        final weekEnd = week == 4
+            ? DateTime(now.year, now.month + 1, 0, 23, 59, 59) // End of month
+            : monthStart.add(Duration(days: week * 7 - 1, hours: 23, minutes: 59, seconds: 59));
+
+        final weekEvents = events.where((e) =>
+            e.type == FulizaEventType.interest &&
+            !e.date.isBefore(weekStart) &&
+            !e.date.isAfter(weekEnd));
+        final total = weekEvents.fold<double>(0, (sum, e) => sum + e.amount);
+
         data.add(FuliGraphData(
-          label: days[date.weekday - 1],
+          label: 'W$week',
           value: total,
         ));
       }
-    } else if (selectedPeriod == 'Month') {
-      // Last 4 weeks
-      for (int i = 3; i >= 0; i--) {
-        final weekStart = now.subtract(Duration(days: i * 7 + 6));
-        final weekEnd = now.subtract(Duration(days: i * 7));
-        final weekEvents = events.where((e) =>
-            e.date.isAfter(weekStart) &&
-            e.date.isBefore(weekEnd.add(const Duration(days: 1))) &&
-            e.type == FulizaEventType.interest);
-        final total =
-            weekEvents.fold<double>(0, (sum, e) => sum + e.amount);
+    } else if (selectedPeriod == 'Year') {
+      // Current year broken into 12 months
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+      for (int i = 0; i < 12; i++) {
+        final monthStart = DateTime(now.year, i + 1, 1);
+        final monthEnd = DateTime(now.year, i + 2, 0, 23, 59, 59);
+
+        final monthEvents = events.where((e) =>
+            e.type == FulizaEventType.interest &&
+            !e.date.isBefore(monthStart) &&
+            !e.date.isAfter(monthEnd));
+        final total = monthEvents.fold<double>(0, (sum, e) => sum + e.amount);
+
         data.add(FuliGraphData(
-          label: 'W${4 - i}',
+          label: months[i],
           value: total,
         ));
       }
     } else {
-      // Last 6 months
+      // All time - show last 6 months for context
       final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
       for (int i = 5; i >= 0; i--) {
-        final month = DateTime(now.year, now.month - i, 1);
+        final targetMonth = DateTime(now.year, now.month - i, 1);
+        final monthStart = DateTime(targetMonth.year, targetMonth.month, 1);
+        final monthEnd = DateTime(targetMonth.year, targetMonth.month + 1, 0, 23, 59, 59);
+
         final monthEvents = events.where((e) =>
-            e.date.year == month.year &&
-            e.date.month == month.month &&
-            e.type == FulizaEventType.interest);
-        final total =
-            monthEvents.fold<double>(0, (sum, e) => sum + e.amount);
+            e.type == FulizaEventType.interest &&
+            !e.date.isBefore(monthStart) &&
+            !e.date.isAfter(monthEnd));
+        final total = monthEvents.fold<double>(0, (sum, e) => sum + e.amount);
+
         data.add(FuliGraphData(
-          label: months[month.month - 1],
+          label: months[targetMonth.month - 1],
           value: total,
         ));
       }
@@ -321,7 +330,19 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
     List<FulizaEvent> events,
   ) {
     final currencyFormat = NumberFormat.currency(symbol: 'Ksh ', decimalDigits: 2);
-    final subtitleText = selectedPeriod == 'All' ? 'All time' : 'This $selectedPeriod';
+
+    // Format subtitle and repaid label based on period
+    final subtitleText = switch (selectedPeriod) {
+      'Monthly' => 'This Month',
+      'Year' => 'This Year',
+      _ => 'All time',
+    };
+
+    final repaidLabel = switch (selectedPeriod) {
+      'Monthly' => 'REPAID MONTH',
+      'Year' => 'REPAID YEAR',
+      _ => 'REPAID ALL',
+    };
 
     // Calculate interest comparison
     final comparison = _calculateInterestComparison(events, selectedPeriod);
@@ -346,7 +367,7 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
               const SizedBox(width: 16),
               Expanded(
                 child: _SummaryCard(
-                  label: 'REPAID ${selectedPeriod.toUpperCase()}',
+                  label: repaidLabel,
                   amount: currencyFormat.format(summary.totalRepaid),
                   subtitle: 'View logs',
                   icon: Icons.arrow_forward,
@@ -377,18 +398,10 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
     DateTime previousEnd;
 
     switch (selectedPeriod) {
-      case 'Week':
-        // Current week (last 7 days)
-        currentEnd = now;
-        currentStart = now.subtract(const Duration(days: 7));
-        // Previous week (7-14 days ago)
-        previousEnd = currentStart;
-        previousStart = previousEnd.subtract(const Duration(days: 7));
-        break;
-      case 'Month':
+      case 'Monthly':
         // Current month
         currentStart = DateTime(now.year, now.month, 1);
-        currentEnd = now;
+        currentEnd = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
         // Previous month
         previousStart = DateTime(now.year, now.month - 1, 1);
         previousEnd = DateTime(now.year, now.month, 0, 23, 59, 59);
@@ -396,7 +409,7 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
       case 'Year':
         // Current year
         currentStart = DateTime(now.year, 1, 1);
-        currentEnd = now;
+        currentEnd = DateTime(now.year, 12, 31, 23, 59, 59);
         // Previous year
         previousStart = DateTime(now.year - 1, 1, 1);
         previousEnd = DateTime(now.year - 1, 12, 31, 23, 59, 59);
@@ -409,16 +422,16 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
     final currentInterest = events
         .where((e) =>
             e.type == FulizaEventType.interest &&
-            e.date.isAfter(currentStart.subtract(const Duration(seconds: 1))) &&
-            e.date.isBefore(currentEnd.add(const Duration(days: 1))))
+            !e.date.isBefore(currentStart) &&
+            !e.date.isAfter(currentEnd))
         .fold<double>(0, (sum, e) => sum + e.amount);
 
     // Calculate previous period interest
     final previousInterest = events
         .where((e) =>
             e.type == FulizaEventType.interest &&
-            e.date.isAfter(previousStart.subtract(const Duration(seconds: 1))) &&
-            e.date.isBefore(previousEnd.add(const Duration(days: 1))))
+            !e.date.isBefore(previousStart) &&
+            !e.date.isAfter(previousEnd))
         .fold<double>(0, (sum, e) => sum + e.amount);
 
     // Calculate percentage change
