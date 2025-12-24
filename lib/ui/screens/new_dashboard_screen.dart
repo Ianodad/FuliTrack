@@ -69,7 +69,7 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
                         const SizedBox(height: 24),
 
                         // Summary Cards
-                        _buildSummaryCards(summary, selectedPeriod),
+                        _buildSummaryCards(summary, selectedPeriod, events),
                       ],
                     ),
                   ),
@@ -315,9 +315,16 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
     return data;
   }
 
-  Widget _buildSummaryCards(FulizaSummary summary, String selectedPeriod) {
+  Widget _buildSummaryCards(
+    FulizaSummary summary,
+    String selectedPeriod,
+    List<FulizaEvent> events,
+  ) {
     final currencyFormat = NumberFormat.currency(symbol: 'Ksh ', decimalDigits: 2);
     final subtitleText = selectedPeriod == 'All' ? 'All time' : 'This $selectedPeriod';
+
+    // Calculate interest comparison
+    final comparison = _calculateInterestComparison(events, selectedPeriod);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -330,10 +337,10 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
                   label: 'INTEREST PAID',
                   amount: currencyFormat.format(summary.totalInterest),
                   subtitle: subtitleText,
-                  icon: Icons.trending_down,
+                  icon: comparison.isDown ? Icons.trending_down : Icons.trending_up,
                   iconColor: AppTheme.amber600,
-                  trend: '32% Down',
-                  trendColor: AppTheme.teal600,
+                  trend: comparison.trend,
+                  trendColor: comparison.isDown ? AppTheme.teal600 : AppTheme.red500,
                 ),
               ),
               const SizedBox(width: 16),
@@ -350,6 +357,85 @@ class _NewDashboardScreenState extends ConsumerState<NewDashboardScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// Calculate interest comparison between current and previous period
+  _InterestComparison _calculateInterestComparison(
+    List<FulizaEvent> events,
+    String selectedPeriod,
+  ) {
+    // For "All" period, don't show comparison
+    if (selectedPeriod == 'All') {
+      return _InterestComparison(trend: null, isDown: true);
+    }
+
+    final now = DateTime.now();
+    DateTime currentStart;
+    DateTime currentEnd;
+    DateTime previousStart;
+    DateTime previousEnd;
+
+    switch (selectedPeriod) {
+      case 'Week':
+        // Current week (last 7 days)
+        currentEnd = now;
+        currentStart = now.subtract(const Duration(days: 7));
+        // Previous week (7-14 days ago)
+        previousEnd = currentStart;
+        previousStart = previousEnd.subtract(const Duration(days: 7));
+        break;
+      case 'Month':
+        // Current month
+        currentStart = DateTime(now.year, now.month, 1);
+        currentEnd = now;
+        // Previous month
+        previousStart = DateTime(now.year, now.month - 1, 1);
+        previousEnd = DateTime(now.year, now.month, 0, 23, 59, 59);
+        break;
+      case 'Year':
+        // Current year
+        currentStart = DateTime(now.year, 1, 1);
+        currentEnd = now;
+        // Previous year
+        previousStart = DateTime(now.year - 1, 1, 1);
+        previousEnd = DateTime(now.year - 1, 12, 31, 23, 59, 59);
+        break;
+      default:
+        return _InterestComparison(trend: null, isDown: true);
+    }
+
+    // Calculate current period interest
+    final currentInterest = events
+        .where((e) =>
+            e.type == FulizaEventType.interest &&
+            e.date.isAfter(currentStart.subtract(const Duration(seconds: 1))) &&
+            e.date.isBefore(currentEnd.add(const Duration(days: 1))))
+        .fold<double>(0, (sum, e) => sum + e.amount);
+
+    // Calculate previous period interest
+    final previousInterest = events
+        .where((e) =>
+            e.type == FulizaEventType.interest &&
+            e.date.isAfter(previousStart.subtract(const Duration(seconds: 1))) &&
+            e.date.isBefore(previousEnd.add(const Duration(days: 1))))
+        .fold<double>(0, (sum, e) => sum + e.amount);
+
+    // Calculate percentage change
+    if (previousInterest == 0) {
+      if (currentInterest == 0) {
+        return _InterestComparison(trend: 'No change', isDown: true);
+      }
+      return _InterestComparison(trend: 'New', isDown: false);
+    }
+
+    final percentChange =
+        ((currentInterest - previousInterest) / previousInterest * 100).abs();
+    final isDown = currentInterest <= previousInterest;
+
+    return _InterestComparison(
+      trend: '${percentChange.toStringAsFixed(0)}% ${isDown ? 'Down' : 'Up'}',
+      isDown: isDown,
     );
   }
 
@@ -475,7 +561,7 @@ class _SummaryCard extends StatelessWidget {
           Row(
             children: [
               if (trend != null) ...[
-                Icon(Icons.trending_down, size: 10, color: trendColor),
+                Icon(icon, size: 10, color: trendColor),
                 const SizedBox(width: 4),
                 Text(
                   trend!,
@@ -503,4 +589,15 @@ class _SummaryCard extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Helper class for interest comparison result
+class _InterestComparison {
+  final String? trend;
+  final bool isDown;
+
+  _InterestComparison({
+    required this.trend,
+    required this.isDown,
+  });
 }
