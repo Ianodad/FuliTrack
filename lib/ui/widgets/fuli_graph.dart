@@ -256,7 +256,7 @@ class _GraphPainter extends CustomPainter {
     if (data.isEmpty) return;
 
     final maxValue = data.map((d) => d.value).reduce((a, b) => a > b ? a : b);
-    if (maxValue == 0) return;
+    final hasData = maxValue > 0;
 
     final leftPadding = 50.0; // More space for Y-axis labels
     final rightPadding = 20.0;
@@ -265,129 +265,160 @@ class _GraphPainter extends CustomPainter {
     final graphWidth = size.width - leftPadding - rightPadding;
     final graphHeight = size.height - topPadding - bottomPadding;
 
-    // Draw Y-axis labels and grid lines
-    _drawYAxis(canvas, size, maxValue, leftPadding, topPadding, graphHeight);
+    // Draw Y-axis labels and grid lines (use a default max for empty data)
+    final displayMaxValue = hasData ? maxValue : 1000.0; // Default scale when no data
+    _drawYAxis(canvas, size, displayMaxValue, leftPadding, topPadding, graphHeight);
 
-    // Calculate points
+    // Calculate points - if no data, all points are at the baseline (y = 0)
     final points = <Offset>[];
     for (var i = 0; i < data.length; i++) {
       final x = leftPadding + (i * graphWidth) / (data.length - 1);
-      final y = size.height -
-          bottomPadding -
-          (data[i].value / maxValue) * graphHeight;
+      final y = hasData
+          ? size.height - bottomPadding - (data[i].value / maxValue) * graphHeight
+          : size.height - bottomPadding; // All points at baseline when no data
       points.add(Offset(x, y));
     }
 
-    // Create gradient for fill area
-    final areaPath = Path();
-    areaPath.moveTo(points.first.dx, size.height - bottomPadding);
-    areaPath.lineTo(points.first.dx, points.first.dy);
+    if (hasData) {
+      // Create gradient for fill area
+      final areaPath = Path();
+      areaPath.moveTo(points.first.dx, size.height - bottomPadding);
+      areaPath.lineTo(points.first.dx, points.first.dy);
 
-    // Draw smooth curve using cubic bezier
-    for (var i = 0; i < points.length - 1; i++) {
-      final p1 = points[i];
-      final p2 = points[i + 1];
-      final cp1x = p1.dx + (p2.dx - p1.dx) / 2;
+      // Draw smooth curve using cubic bezier
+      for (var i = 0; i < points.length - 1; i++) {
+        final p1 = points[i];
+        final p2 = points[i + 1];
+        final cp1x = p1.dx + (p2.dx - p1.dx) / 2;
 
-      areaPath.cubicTo(
-        cp1x,
-        p1.dy,
-        cp1x,
-        p2.dy,
-        p2.dx,
-        p2.dy,
+        areaPath.cubicTo(
+          cp1x,
+          p1.dy,
+          cp1x,
+          p2.dy,
+          p2.dx,
+          p2.dy,
+        );
+      }
+
+      areaPath.lineTo(points.last.dx, size.height - bottomPadding);
+      areaPath.close();
+
+      // Fill gradient
+      final fillGradient = LinearGradient(
+        begin: Alignment.topCenter,
+        end: Alignment.bottomCenter,
+        colors: [
+          AppTheme.teal500.withOpacity(0.3),
+          AppTheme.teal500.withOpacity(0),
+        ],
+      );
+
+      final fillPaint = Paint()
+        ..shader = fillGradient.createShader(
+          Rect.fromLTWH(0, 0, size.width, size.height),
+        );
+
+      canvas.drawPath(areaPath, fillPaint);
+
+      // Draw line
+      final linePath = Path();
+      linePath.moveTo(points.first.dx, points.first.dy);
+
+      for (var i = 0; i < points.length - 1; i++) {
+        final p1 = points[i];
+        final p2 = points[i + 1];
+        final cp1x = p1.dx + (p2.dx - p1.dx) / 2;
+
+        linePath.cubicTo(
+          cp1x,
+          p1.dy,
+          cp1x,
+          p2.dy,
+          p2.dx,
+          p2.dy,
+        );
+      }
+
+      // Line gradient
+      final lineGradient = LinearGradient(
+        colors: [AppTheme.teal400, AppTheme.amber500],
+      );
+
+      final linePaint = Paint()
+        ..shader = lineGradient.createShader(
+          Rect.fromLTWH(0, 0, size.width, size.height),
+        )
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 4
+        ..strokeCap = StrokeCap.round;
+
+      // Add glow effect
+      final glowPaint = Paint()
+        ..shader = lineGradient.createShader(
+          Rect.fromLTWH(0, 0, size.width, size.height),
+        )
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 12
+        ..strokeCap = StrokeCap.round
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+
+      canvas.drawPath(linePath, glowPaint);
+      canvas.drawPath(linePath, linePaint);
+    } else {
+      // Draw a flat baseline when there's no data
+      final baselinePaint = Paint()
+        ..color = AppTheme.slate600
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2
+        ..strokeCap = StrokeCap.round;
+
+      canvas.drawLine(
+        Offset(leftPadding, size.height - bottomPadding),
+        Offset(size.width - rightPadding, size.height - bottomPadding),
+        baselinePaint,
       );
     }
 
-    areaPath.lineTo(points.last.dx, size.height - bottomPadding);
-    areaPath.close();
-
-    // Fill gradient
-    final fillGradient = LinearGradient(
-      begin: Alignment.topCenter,
-      end: Alignment.bottomCenter,
-      colors: [
-        AppTheme.teal500.withOpacity(0.3),
-        AppTheme.teal500.withOpacity(0),
-      ],
-    );
-
-    final fillPaint = Paint()
-      ..shader = fillGradient.createShader(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-      );
-
-    canvas.drawPath(areaPath, fillPaint);
-
-    // Draw line
-    final linePath = Path();
-    linePath.moveTo(points.first.dx, points.first.dy);
-
-    for (var i = 0; i < points.length - 1; i++) {
-      final p1 = points[i];
-      final p2 = points[i + 1];
-      final cp1x = p1.dx + (p2.dx - p1.dx) / 2;
-
-      linePath.cubicTo(
-        cp1x,
-        p1.dy,
-        cp1x,
-        p2.dy,
-        p2.dx,
-        p2.dy,
-      );
-    }
-
-    // Line gradient
-    final lineGradient = LinearGradient(
-      colors: [AppTheme.teal400, AppTheme.amber500],
-    );
-
-    final linePaint = Paint()
-      ..shader = lineGradient.createShader(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-      )
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 4
-      ..strokeCap = StrokeCap.round;
-
-    // Add glow effect
-    final glowPaint = Paint()
-      ..shader = lineGradient.createShader(
-        Rect.fromLTWH(0, 0, size.width, size.height),
-      )
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 12
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-
-    canvas.drawPath(linePath, glowPaint);
-    canvas.drawPath(linePath, linePaint);
-
-    // Draw interactive data points
+    // Draw data points (always show them)
     for (var i = 0; i < points.length; i++) {
       final isSelected = selectedIndex == i;
       final point = points[i];
 
-      // Outer glow for selected point
-      if (isSelected) {
-        final glowPaint = Paint()
-          ..color = AppTheme.teal400.withOpacity(0.4)
-          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-        canvas.drawCircle(point, 16, glowPaint);
+      if (hasData) {
+        // Outer glow for selected point
+        if (isSelected) {
+          final glowPaint = Paint()
+            ..color = AppTheme.teal400.withOpacity(0.4)
+            ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+          canvas.drawCircle(point, 16, glowPaint);
+        }
+
+        // White outer ring
+        final outerPaint = Paint()
+          ..color = isSelected ? AppTheme.teal400 : Colors.white.withOpacity(0.8)
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(point, isSelected ? 8 : 5, outerPaint);
+
+        // Inner dot
+        final innerPaint = Paint()
+          ..color = isSelected ? Colors.white : AppTheme.slate900
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(point, isSelected ? 4 : 2.5, innerPaint);
+      } else {
+        // Show hollow circles at baseline when no data
+        final outerPaint = Paint()
+          ..color = AppTheme.slate500
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2;
+        canvas.drawCircle(point, 5, outerPaint);
+
+        // Small filled center
+        final innerPaint = Paint()
+          ..color = AppTheme.slate600
+          ..style = PaintingStyle.fill;
+        canvas.drawCircle(point, 2, innerPaint);
       }
-
-      // White outer ring
-      final outerPaint = Paint()
-        ..color = isSelected ? AppTheme.teal400 : Colors.white.withOpacity(0.8)
-        ..style = PaintingStyle.fill;
-      canvas.drawCircle(point, isSelected ? 8 : 5, outerPaint);
-
-      // Inner dot
-      final innerPaint = Paint()
-        ..color = isSelected ? Colors.white : AppTheme.slate900
-        ..style = PaintingStyle.fill;
-      canvas.drawCircle(point, isSelected ? 4 : 2.5, innerPaint);
     }
 
     // Draw labels
