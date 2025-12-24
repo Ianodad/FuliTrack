@@ -150,13 +150,26 @@ class NewSettingsScreen extends ConsumerWidget {
           children: [
             _buildSettingItem(
               context,
-              icon: Icons.bolt_rounded,
+              icon: Icons.warning_amber_rounded,
+              iconBg: AppTheme.amber50,
+              iconColor: AppTheme.amber500,
+              title: 'Fuliza Warning Threshold',
+              value: 'Not Set',
+              onTap: () => _showWarningThresholdDialog(context),
+              isFirst: true,
+            ),
+            Divider(height: 1, color: AppTheme.slate50, indent: 72),
+            _buildSettingItemWithToggle(
+              context,
+              icon: Icons.notifications_active_rounded,
               iconBg: AppTheme.teal50,
               iconColor: AppTheme.teal600,
-              title: 'Set Fuliza Limit',
-              value: 'Ksh 5,000',
-              onTap: () => _showLimitDialog(context),
-              isFirst: true,
+              title: 'High Usage Alerts',
+              isEnabled: true,
+              onToggle: (value) {
+                // Handle toggle
+              },
+              isLast: false,
             ),
             Divider(height: 1, color: AppTheme.slate50, indent: 72),
             _buildSettingItemWithToggle(
@@ -385,58 +398,276 @@ class NewSettingsScreen extends ConsumerWidget {
     );
   }
 
-  void _showLimitDialog(BuildContext context) {
-    showDialog(
+  void _showWarningThresholdDialog(BuildContext context) {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppTheme.slate900,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(24),
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        title: const Text(
-          'Set Fuliza Limit',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+        decoration: const BoxDecoration(
+          color: AppTheme.slate900,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              keyboardType: TextInputType.number,
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Enter limit amount',
-                hintStyle: TextStyle(color: AppTheme.slate500),
-                prefixText: 'Ksh ',
-                prefixStyle: const TextStyle(color: Colors.white),
-                filled: true,
-                fillColor: AppTheme.slate800,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide.none,
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle bar
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.slate700,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-            ),
-          ],
+              const SizedBox(height: 24),
+
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.amber500.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.warning_amber_rounded,
+                      color: AppTheme.amber500,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'FULIZA WARNING',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Get notified when usage is too high',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.slate400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Description
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.slate800,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 18,
+                      color: AppTheme.teal400,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Set a threshold amount. You\'ll receive a notification when your Fuliza balance exceeds this limit.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.slate300,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Input field
+              Text(
+                'WARNING THRESHOLD',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  color: AppTheme.slate500,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                keyboardType: TextInputType.number,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Enter amount (e.g. 3000)',
+                  hintStyle: TextStyle(
+                    color: AppTheme.slate600,
+                    fontWeight: FontWeight.normal,
+                  ),
+                  prefixText: 'Ksh ',
+                  prefixStyle: const TextStyle(
+                    color: AppTheme.amber500,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  filled: true,
+                  fillColor: AppTheme.slate800,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Quick select buttons
+              Text(
+                'QUICK SELECT',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  color: AppTheme.slate500,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _buildQuickSelectChip('1,000'),
+                  const SizedBox(width: 8),
+                  _buildQuickSelectChip('2,500'),
+                  const SizedBox(width: 8),
+                  _buildQuickSelectChip('5,000'),
+                  const SizedBox(width: 8),
+                  _buildQuickSelectChip('10,000'),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: AppTheme.slate400,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Warning threshold saved'),
+                            backgroundColor: AppTheme.teal600,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        );
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppTheme.amber500,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'Save Threshold',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
+      ),
+    );
+  }
+
+  Widget _buildQuickSelectChip(String amount) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          // Would set the text field value
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: AppTheme.slate800,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppTheme.slate700,
+            ),
+          ),
+          child: Center(
             child: Text(
-              'Cancel',
-              style: TextStyle(color: AppTheme.slate400),
+              amount,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.slate300,
+              ),
             ),
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context),
-            style: FilledButton.styleFrom(
-              backgroundColor: AppTheme.teal600,
-            ),
-            child: const Text('Save'),
-          ),
-        ],
+        ),
       ),
     );
   }
