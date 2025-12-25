@@ -91,7 +91,7 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
-      color: Color(0xFF14B8A6), // Teal color
+      color: const Color(0xFF14B8A6), // Teal color
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -133,7 +133,7 @@ class NotificationService {
       importance: Importance.max,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
-      color: Color(0xFFF59E0B), // Amber color for warning
+      color: const Color(0xFFF59E0B), // Amber color for warning
       styleInformation: BigTextStyleInformation(''),
     );
 
@@ -175,7 +175,7 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
-      color: Color(0xFF10B981), // Green color for achievement
+      color: const Color(0xFF10B981), // Green color for achievement
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -212,7 +212,7 @@ class NotificationService {
       importance: Importance.defaultImportance,
       priority: Priority.defaultPriority,
       icon: '@mipmap/ic_launcher',
-      color: Color(0xFF14B8A6),
+      color: const Color(0xFF14B8A6),
       styleInformation: BigTextStyleInformation(''),
     );
 
