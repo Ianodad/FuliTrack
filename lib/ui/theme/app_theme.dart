@@ -32,7 +32,9 @@ class AppTheme {
   static const Color successGreen = Color(0xFF10B981);
 
   // Additional badge colors
+  static const Color purple50 = Color(0xFFFAF5FF);
   static const Color purple500 = Color(0xFF8B5CF6);
+  static const Color blue50 = Color(0xFFEFF6FF);
   static const Color blue500 = Color(0xFF3B82F6);
   static const Color indigo500 = Color(0xFF6366F1);
 
