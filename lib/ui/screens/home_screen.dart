@@ -1,27 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../theme/app_theme.dart';
-import 'new_dashboard_screen.dart';
-import 'new_activity_screen.dart';
-import 'new_rewards_screen.dart';
-import 'new_settings_screen.dart';
+import 'dashboard_screen.dart';
+import 'activity_screen.dart';
+import 'rewards_screen.dart';
+import 'settings_screen.dart';
 
 /// Main home screen with premium floating bottom navigation
-class NewHomeScreen extends StatefulWidget {
-  const NewHomeScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<NewHomeScreen> createState() => _NewHomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _NewHomeScreenState extends State<NewHomeScreen> {
+class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _screens = const [
-    NewDashboardScreen(),
-    NewActivityScreen(),
-    NewRewardsScreen(),
-    NewSettingsScreen(),
+    DashboardScreen(),
+    ActivityScreen(),
+    RewardsScreen(),
+    SettingsScreen(),
   ];
 
   @override
@@ -40,11 +40,11 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
           Positioned(
             left: 32,
             right: 32,
-            bottom: 16, // Moved down by reducing bottom padding
+            bottom: 16,
             child: Container(
               decoration: BoxDecoration(
                 color: AppTheme.slate900.withOpacity(0.95),
-                borderRadius: BorderRadius.circular(28), // Slightly smaller for thinner look
+                borderRadius: BorderRadius.circular(28),
                 border: Border.all(
                   color: Colors.white.withOpacity(0.1),
                 ),
@@ -63,7 +63,7 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
                       ColorFilter.mode(Colors.transparent, BlendMode.overlay),
                   child: Padding(
                     padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 10), // Reduced vertical padding for thinner navbar
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
                       children: [
@@ -109,7 +109,6 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
     return GestureDetector(
       onTap: () {
         if (_currentIndex != index) {
-          // Haptic feedback when switching tabs
           HapticFeedback.lightImpact();
           setState(() => _currentIndex = index);
         }

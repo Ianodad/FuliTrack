@@ -1,338 +1,831 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../models/models.dart';
+import '../theme/app_theme.dart';
+import '../widgets/premium_widgets.dart';
 import '../../providers/providers.dart';
-import '../../services/services.dart';
 
-/// Settings screen for app configuration and data management
+/// Settings screen with premium design - System Setup
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final settings = ref.watch(settingsProvider);
-    final theme = Theme.of(context);
-
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Settings'),
-      ),
-      body: ListView(
-        children: [
-          // Display settings
-          _SectionHeader(title: 'Display'),
-          SwitchListTile(
-            title: const Text('Show Charts'),
-            subtitle: const Text('Display trend charts on dashboard'),
-            value: settings.showCharts,
-            onChanged: (value) {
-              ref.read(settingsProvider.notifier).setShowCharts(value);
-            },
-          ),
-
-          const Divider(),
-
-          // Comparison settings
-          _SectionHeader(title: 'Reward Comparison'),
-          ListTile(
-            title: const Text('Comparison Type'),
-            subtitle: Text(_getComparisonLabel(settings.comparisonPreference)),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => _showComparisonPicker(context, ref),
-          ),
-
-          const Divider(),
-
-          // Data management
-          _SectionHeader(title: 'Data Management'),
-          ListTile(
-            leading: const Icon(Icons.sync),
-            title: const Text('Sync SMS'),
-            subtitle: const Text('Import Fuliza transactions from SMS'),
-            onTap: () => _syncSms(context, ref),
-          ),
-          FutureBuilder<_DataStats>(
-            future: _getDataStats(ref),
-            builder: (context, snapshot) {
-              final stats = snapshot.data;
-              return ListTile(
-                leading: const Icon(Icons.storage),
-                title: const Text('Data Statistics'),
-                subtitle: Text(
-                  stats != null
-                      ? '${stats.eventCount} transactions, ${stats.rewardCount} rewards'
-                      : 'Loading...',
+      backgroundColor: AppTheme.slate50,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.only(bottom: 120),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Text(
+                  'SYSTEM SETUP',
+                  style: TextStyle(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900,
+                    fontStyle: FontStyle.italic,
+                    color: AppTheme.slate900,
+                    letterSpacing: -0.5,
+                  ),
                 ),
-              );
+              ),
+
+              const SizedBox(height: 8),
+
+              // Personalization Section
+              _buildSectionHeader('PERSONALIZATION', icon: Icons.tune_rounded),
+              const SizedBox(height: 12),
+              _buildPersonalizationCard(context, ref),
+
+              const SizedBox(height: 32),
+
+              // Data Management Section
+              _buildSectionHeader('DATA & ENGINE', icon: Icons.storage_rounded),
+              const SizedBox(height: 12),
+              _buildDataManagementCard(context, ref),
+
+              const SizedBox(height: 32),
+
+              // Sign Out Button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+                child: TappableButton(
+                  onTap: () {
+                    // Sign out action
+                  },
+                  child: Container(
+                    width: double.infinity,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      color: AppTheme.slate900,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.logout_rounded, size: 16, color: Colors.white),
+                        const SizedBox(width: 8),
+                        Text(
+                          'SIGN OUT',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w900,
+                            fontStyle: FontStyle.italic,
+                            letterSpacing: 2,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // App Info
+              Center(
+                child: Column(
+                  children: [
+                    Text(
+                      'FULITRACK BUILD V1.0.8-ALPHA',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: AppTheme.slate400,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '2024',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppTheme.slate300,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, {IconData? icon}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: GradientHeader(
+        title: title,
+        icon: icon,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+    );
+  }
+
+  Widget _buildPersonalizationCard(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(color: AppTheme.slate100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            _buildSettingItem(
+              context,
+              icon: Icons.warning_amber_rounded,
+              iconBg: AppTheme.amber50,
+              iconColor: AppTheme.amber500,
+              title: 'Fuliza Warning Threshold',
+              value: 'Not Set',
+              onTap: () => _showWarningThresholdDialog(context),
+              isFirst: true,
+            ),
+            Divider(height: 1, color: AppTheme.slate50, indent: 72),
+            _buildSettingItemWithToggle(
+              context,
+              icon: Icons.notifications_active_rounded,
+              iconBg: AppTheme.teal50,
+              iconColor: AppTheme.teal600,
+              title: 'High Usage Alerts',
+              isEnabled: true,
+              onToggle: (value) {
+                // Handle toggle
+              },
+              isLast: false,
+            ),
+            Divider(height: 1, color: AppTheme.slate50, indent: 72),
+            _buildSettingItemWithToggle(
+              context,
+              icon: Icons.notifications_outlined,
+              iconBg: AppTheme.slate50,
+              iconColor: AppTheme.slate500,
+              title: 'Interest Alerts',
+              isEnabled: true,
+              onToggle: (value) {
+                // Handle toggle
+              },
+              isLast: true,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDataManagementCard(BuildContext context, WidgetRef ref) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(color: AppTheme.slate100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            _buildActionItem(
+              context,
+              icon: Icons.refresh_rounded,
+              title: 'Re-sync SMS Database',
+              color: AppTheme.teal600,
+              onTap: () => _rescanSms(context, ref),
+              isFirst: true,
+            ),
+            Divider(height: 1, color: AppTheme.slate50, indent: 72),
+            _buildActionItem(
+              context,
+              icon: Icons.delete_outline_rounded,
+              title: 'Purge App Cache',
+              color: AppTheme.red500,
+              onTap: () => _clearData(context, ref),
+              isLast: true,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingItem(
+    BuildContext context, {
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
+    required String title,
+    required String value,
+    required VoidCallback onTap,
+    bool isFirst = false,
+    bool isLast = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.vertical(
+        top: isFirst ? const Radius.circular(32) : Radius.zero,
+        bottom: isLast ? const Radius.circular(32) : Radius.zero,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: iconBg,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 18, color: iconColor),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: AppTheme.slate700,
+                ),
+              ),
+            ),
+            Row(
+              children: [
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.slate400,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 16,
+                  color: AppTheme.slate300,
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingItemWithToggle(
+    BuildContext context, {
+    required IconData icon,
+    required Color iconBg,
+    required Color iconColor,
+    required String title,
+    required bool isEnabled,
+    required ValueChanged<bool> onToggle,
+    bool isFirst = false,
+    bool isLast = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: iconBg,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(icon, size: 18, color: iconColor),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.slate700,
+              ),
+            ),
+          ),
+          // Toggle switch
+          GestureDetector(
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onToggle(!isEnabled);
             },
-          ),
-          ListTile(
-            leading: Icon(
-              Icons.delete_forever,
-              color: theme.colorScheme.error,
-            ),
-            title: Text(
-              'Delete All Data',
-              style: TextStyle(color: theme.colorScheme.error),
-            ),
-            subtitle: const Text('Permanently remove all tracked data'),
-            onTap: () => _confirmDeleteData(context, ref),
-          ),
-
-          const Divider(),
-
-          // Privacy section
-          _SectionHeader(title: 'Privacy'),
-          const ListTile(
-            leading: Icon(Icons.shield_outlined),
-            title: Text('Your Data is Private'),
-            subtitle: Text(
-              'All data is stored locally on your device. '
-              'Nothing is sent to any server.',
+            child: Container(
+              width: 40,
+              height: 20,
+              decoration: BoxDecoration(
+                color: isEnabled ? AppTheme.teal600 : AppTheme.slate300,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: AnimatedAlign(
+                duration: const Duration(milliseconds: 200),
+                alignment:
+                    isEnabled ? Alignment.centerRight : Alignment.centerLeft,
+                child: Container(
+                  width: 16,
+                  height: 16,
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
             ),
           ),
-          const ListTile(
-            leading: Icon(Icons.sms_outlined),
-            title: Text('SMS Access'),
-            subtitle: Text(
-              'We only read M-PESA Fuliza messages to track your usage. '
-              'Other SMS messages are ignored.',
-            ),
-          ),
-
-          const Divider(),
-
-          // About section
-          _SectionHeader(title: 'About'),
-          const ListTile(
-            leading: Icon(Icons.info_outline),
-            title: Text('FuliTrack'),
-            subtitle: Text('Version 1.0.0'),
-          ),
-          ListTile(
-            leading: const Icon(Icons.code),
-            title: const Text('Made in Kenya'),
-            subtitle: const Text('Privacy-first Fuliza tracking'),
-            onTap: () => _showAboutDialog(context),
-          ),
-
-          const SizedBox(height: 32),
         ],
       ),
     );
   }
 
-  String _getComparisonLabel(ComparisonTypePreference pref) {
-    switch (pref) {
-      case ComparisonTypePreference.interestOnly:
-        return 'Interest Only';
-      case ComparisonTypePreference.principalOnly:
-        return 'Principal Only';
-      case ComparisonTypePreference.combined:
-        return 'Combined (Interest + Principal)';
-    }
-  }
-
-  void _showComparisonPicker(BuildContext context, WidgetRef ref) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'Reward Comparison Type',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
-                ),
+  Widget _buildActionItem(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required Color color,
+    required VoidCallback onTap,
+    bool isFirst = false,
+    bool isLast = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.vertical(
+        top: isFirst ? const Radius.circular(32) : Radius.zero,
+        bottom: isLast ? const Radius.circular(32) : Radius.zero,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: color,
               ),
-              ListTile(
-                title: const Text('Interest Only'),
-                subtitle: const Text('Compare only interest charged'),
-                onTap: () {
-                  ref.read(settingsProvider.notifier).setComparisonPreference(
-                        ComparisonTypePreference.interestOnly,
-                      );
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                title: const Text('Principal Only'),
-                subtitle: const Text('Compare only loan amounts'),
-                onTap: () {
-                  ref.read(settingsProvider.notifier).setComparisonPreference(
-                        ComparisonTypePreference.principalOnly,
-                      );
-                  Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                title: const Text('Combined'),
-                subtitle: const Text('Compare interest + principal'),
-                onTap: () {
-                  ref.read(settingsProvider.notifier).setComparisonPreference(
-                        ComparisonTypePreference.combined,
-                      );
-                  Navigator.pop(context);
-                },
-              ),
-              const SizedBox(height: 16),
-            ],
-          ),
-        );
-      },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  Future<void> _syncSms(BuildContext context, WidgetRef ref) async {
-    // Show loading
-    showDialog(
+  void _showWarningThresholdDialog(BuildContext context) {
+    showModalBottomSheet(
       context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: Card(
-          child: Padding(
-            padding: EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Syncing SMS...'),
-              ],
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        decoration: const BoxDecoration(
+          color: AppTheme.slate900,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle bar
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.slate700,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.amber500.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.warning_amber_rounded,
+                      color: AppTheme.amber500,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'FULIZA WARNING',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Get notified when usage is too high',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.slate400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Description
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.slate800,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline_rounded,
+                      size: 18,
+                      color: AppTheme.teal400,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'Set a threshold amount. You\'ll receive a notification when your Fuliza balance exceeds this limit.',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppTheme.slate300,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Input field
+              Text(
+                'WARNING THRESHOLD',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  color: AppTheme.textSecondary,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextField(
+                keyboardType: TextInputType.number,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+                decoration: InputDecoration(
+                  hintText: 'Enter amount (e.g. 3000)',
+                  hintStyle: TextStyle(
+                    color: AppTheme.slate600,
+                    fontWeight: FontWeight.normal,
+                  ),
+                  prefixText: 'Ksh ',
+                  prefixStyle: const TextStyle(
+                    color: AppTheme.amber500,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  filled: true,
+                  fillColor: AppTheme.slate800,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide.none,
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 16,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // Quick select buttons
+              Text(
+                'QUICK SELECT',
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w900,
+                  color: AppTheme.textSecondary,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  _buildQuickSelectChip('1,000'),
+                  const SizedBox(width: 8),
+                  _buildQuickSelectChip('2,500'),
+                  const SizedBox(width: 8),
+                  _buildQuickSelectChip('5,000'),
+                  const SizedBox(width: 8),
+                  _buildQuickSelectChip('10,000'),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(
+                          color: AppTheme.slate400,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: FilledButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: const Text('Warning threshold saved'),
+                            backgroundColor: AppTheme.teal600,
+                            behavior: SnackBarBehavior.floating,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                        );
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppTheme.amber500,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                      child: const Text(
+                        'Save Threshold',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickSelectChip(String amount) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          HapticFeedback.selectionClick();
+          // Would set the text field value
+        },
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: AppTheme.slate800,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: AppTheme.slate700,
+            ),
+          ),
+          child: Center(
+            child: Text(
+              amount,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: AppTheme.slate300,
+              ),
             ),
           ),
         ),
       ),
     );
-
-    try {
-      final count = await ref.read(fulizaProvider.notifier).syncFromSms();
-
-      if (context.mounted) {
-        Navigator.pop(context); // Close loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(count > 0
-                ? 'Synced $count Fuliza transactions'
-                : 'No new transactions found'),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        Navigator.pop(context); // Close loading
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to sync: $e'),
-            backgroundColor: Theme.of(context).colorScheme.error,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-      }
-    }
   }
 
-  Future<_DataStats> _getDataStats(WidgetRef ref) async {
-    final db = ref.read(databaseServiceProvider);
-    final events = await db.getAllEvents();
-    final rewards = await db.getAllRewards();
-    return _DataStats(eventCount: events.length, rewardCount: rewards.length);
-  }
-
-  void _confirmDeleteData(BuildContext context, WidgetRef ref) {
-    showDialog(
+  Future<void> _rescanSms(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete All Data?'),
-        content: const Text(
-          'This will permanently delete all your tracked Fuliza transactions '
-          'and earned rewards. This action cannot be undone.',
+        backgroundColor: AppTheme.slate900,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        title: const Text(
+          'Re-sync SMS Database',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'This will re-read all M-PESA messages and update your Fuliza history. '
+          'This may take a few moments.',
+          style: TextStyle(color: AppTheme.slate300),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppTheme.slate400),
+            ),
           ),
           FilledButton(
+            onPressed: () => Navigator.pop(context, true),
             style: FilledButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
+              backgroundColor: AppTheme.teal600,
             ),
-            onPressed: () async {
-              Navigator.pop(context);
-              await ref.read(fulizaProvider.notifier).deleteAllData();
-              await ref.read(rewardProvider.notifier).deleteAllRewards();
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('All data deleted'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
-            child: const Text('Delete'),
+            child: const Text('Re-sync'),
           ),
         ],
       ),
     );
-  }
 
-  void _showAboutDialog(BuildContext context) {
-    showAboutDialog(
-      context: context,
-      applicationName: 'FuliTrack',
-      applicationVersion: '1.0.0',
-      applicationLegalese: ' 2024 FuliTrack\nMade with love in Kenya',
-      children: [
-        const SizedBox(height: 16),
-        const Text(
-          'FuliTrack helps you understand and reduce your Fuliza M-PESA usage '
-          'by parsing SMS messages and providing insights into your borrowing habits.',
+    if (confirmed == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Re-syncing SMS messages...'),
+          backgroundColor: AppTheme.slate800,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
         ),
-        const SizedBox(height: 16),
-        const Text(
-          'Features:\n'
-          '- Automatic SMS parsing\n'
-          '- Weekly, monthly, yearly summaries\n'
-          '- Interest trend charts\n'
-          '- Savings rewards and badges\n'
-          '- 100% offline and private',
-        ),
-      ],
-    );
-  }
-}
+      );
 
-class _SectionHeader extends StatelessWidget {
-  final String title;
+      try {
+        final notifier = ref.read(fulizaProvider.notifier);
+        final count = await notifier.syncFromSms();
 
-  const _SectionHeader({required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Text(
-        title,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Found $count Fuliza transactions'),
+              backgroundColor: AppTheme.teal600,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: AppTheme.red500,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      }
+    }
+  }
+
+  Future<void> _clearData(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.slate900,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        title: const Text(
+          'Purge App Cache',
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'This will permanently delete all your Fuliza tracking data. '
+          'This action cannot be undone.',
+          style: TextStyle(color: AppTheme.slate300),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(
+              'Cancel',
+              style: TextStyle(color: AppTheme.slate400),
+            ),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.red500,
+            ),
+            child: const Text('Delete All'),
+          ),
+        ],
       ),
     );
+
+    if (confirmed == true && context.mounted) {
+      try {
+        final notifier = ref.read(fulizaProvider.notifier);
+        await notifier.deleteAllData();
+
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('All data cleared successfully'),
+              backgroundColor: AppTheme.slate800,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error: ${e.toString()}'),
+              backgroundColor: AppTheme.red500,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          );
+        }
+      }
+    }
   }
-}
-
-class _DataStats {
-  final int eventCount;
-  final int rewardCount;
-
-  _DataStats({required this.eventCount, required this.rewardCount});
 }

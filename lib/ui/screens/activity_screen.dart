@@ -8,14 +8,14 @@ import '../../models/models.dart';
 import '../../providers/providers.dart';
 
 /// Activity screen with premium design and transaction list
-class NewActivityScreen extends ConsumerStatefulWidget {
-  const NewActivityScreen({super.key});
+class ActivityScreen extends ConsumerStatefulWidget {
+  const ActivityScreen({super.key});
 
   @override
-  ConsumerState<NewActivityScreen> createState() => _NewActivityScreenState();
+  ConsumerState<ActivityScreen> createState() => _ActivityScreenState();
 }
 
-class _NewActivityScreenState extends ConsumerState<NewActivityScreen> {
+class _ActivityScreenState extends ConsumerState<ActivityScreen> {
   String _selectedFilter = 'All';
   int? _expandedId;
 
