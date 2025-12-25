@@ -31,6 +31,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final now = DateTime.now();
     _selectedMonth = now.month;
     _selectedYear = now.year;
+
+    // Set filter to allTime to get all events for local filtering
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(fulizaProvider.notifier).setFilter(DateFilter.allTime);
+    });
   }
 
   @override
@@ -60,6 +65,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         _buildPeriodTypeSelector(),
                         const SizedBox(height: 12),
                         _buildPeriodNavigator(),
+                        const SizedBox(height: 16),
+                        _buildPeriodStats(events),
                         const SizedBox(height: 24),
                         _buildGraph(events),
                         const SizedBox(height: 24),
@@ -515,6 +522,113 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         }
       }
     });
+  }
+
+  /// Build period statistics banner
+  Widget _buildPeriodStats(List<FulizaEvent> events) {
+    final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    final currencyFormat = NumberFormat.currency(symbol: 'Ksh ', decimalDigits: 0);
+
+    // Get period date range
+    DateTime start;
+    DateTime end;
+    if (_periodType == 'Monthly') {
+      start = DateTime(_selectedYear, _selectedMonth, 1);
+      end = DateTime(_selectedYear, _selectedMonth + 1, 0, 23, 59, 59);
+    } else {
+      start = DateTime(_selectedYear, 1, 1);
+      end = DateTime(_selectedYear, 12, 31, 23, 59, 59);
+    }
+
+    // Filter events for this period
+    final periodEvents = events.where((e) =>
+        !e.date.isBefore(start) && !e.date.isAfter(end)).toList();
+
+    // Calculate stats
+    final loanCount = periodEvents.where((e) => e.type == FulizaEventType.loan).length;
+    final totalBorrowed = periodEvents
+        .where((e) => e.type == FulizaEventType.loan)
+        .fold<double>(0, (sum, e) => sum + e.amount);
+    final totalInterest = periodEvents
+        .where((e) => e.type == FulizaEventType.interest)
+        .fold<double>(0, (sum, e) => sum + e.amount);
+
+    final periodLabel = _periodType == 'Monthly'
+        ? '${monthNames[_selectedMonth - 1]} $_selectedYear'
+        : '$_selectedYear';
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppTheme.teal500.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppTheme.teal500.withOpacity(0.2)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildStatItem(
+              label: 'LOANS',
+              value: '$loanCount',
+              subValue: periodLabel,
+            ),
+            Container(width: 1, height: 32, color: AppTheme.teal500.withOpacity(0.2)),
+            _buildStatItem(
+              label: 'BORROWED',
+              value: currencyFormat.format(totalBorrowed),
+              subValue: null,
+            ),
+            Container(width: 1, height: 32, color: AppTheme.teal500.withOpacity(0.2)),
+            _buildStatItem(
+              label: 'INTEREST',
+              value: currencyFormat.format(totalInterest),
+              subValue: null,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem({
+    required String label,
+    required String value,
+    String? subValue,
+  }) {
+    return Column(
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 9,
+            fontWeight: FontWeight.w900,
+            color: AppTheme.teal600,
+            letterSpacing: 0.5,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w900,
+            color: AppTheme.slate800,
+          ),
+        ),
+        if (subValue != null) ...[
+          Text(
+            subValue,
+            style: TextStyle(
+              fontSize: 9,
+              fontWeight: FontWeight.w600,
+              color: AppTheme.slate400,
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
   void _showPeriodPicker(BuildContext context) {

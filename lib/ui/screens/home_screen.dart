@@ -40,7 +40,7 @@ class _HomeScreenState extends State<HomeScreen> {
           Positioned(
             left: 32,
             right: 32,
-            bottom: 16,
+            bottom: 24,
             child: Container(
               decoration: BoxDecoration(
                 color: AppTheme.slate900.withOpacity(0.95),
