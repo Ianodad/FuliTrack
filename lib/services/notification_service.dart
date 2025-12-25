@@ -2,6 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import '../models/models.dart';
+import '../ui/theme/app_theme.dart';
 import '../utils/utils.dart';
 
 /// Service for managing local notifications
@@ -91,7 +92,7 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
-      color: const Color(0xFF14B8A6), // Teal color
+      color: AppTheme.teal500,
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -133,7 +134,7 @@ class NotificationService {
       importance: Importance.max,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
-      color: const Color(0xFFF59E0B), // Amber color for warning
+      color: AppTheme.amber500,
       styleInformation: BigTextStyleInformation(''),
     );
 
@@ -175,7 +176,7 @@ class NotificationService {
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
-      color: const Color(0xFF10B981), // Green color for achievement
+      color: AppTheme.emerald500,
     );
 
     const iosDetails = DarwinNotificationDetails(
@@ -212,7 +213,7 @@ class NotificationService {
       importance: Importance.defaultImportance,
       priority: Priority.defaultPriority,
       icon: '@mipmap/ic_launcher',
-      color: const Color(0xFF14B8A6),
+      color: AppTheme.teal500,
       styleInformation: BigTextStyleInformation(''),
     );
 
