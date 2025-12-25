@@ -43,6 +43,13 @@ class SettingsScreen extends ConsumerWidget {
 
               const SizedBox(height: 32),
 
+              // Notifications Section
+              _buildSectionHeader('NOTIFICATIONS', icon: Icons.notifications_rounded),
+              const SizedBox(height: 12),
+              _buildNotificationsCard(context, ref),
+
+              const SizedBox(height: 32),
+
               // Data Management Section
               _buildSectionHeader('DATA & ENGINE', icon: Icons.storage_rounded),
               const SizedBox(height: 12),
@@ -126,6 +133,83 @@ class SettingsScreen extends ConsumerWidget {
         title: title,
         icon: icon,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      ),
+    );
+  }
+
+  Widget _buildNotificationsCard(BuildContext context, WidgetRef ref) {
+    final notifPrefs = ref.watch(notificationPreferencesProvider);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(color: AppTheme.slate100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            _buildSettingItemWithToggle(
+              context,
+              icon: Icons.calendar_today_rounded,
+              iconBg: AppTheme.teal50,
+              iconColor: AppTheme.teal600,
+              title: 'Due Date Reminders',
+              isEnabled: notifPrefs.dueDateReminders,
+              onToggle: (value) {
+                ref.read(notificationPreferencesProvider.notifier).setDueDateReminders(value);
+              },
+              isFirst: true,
+            ),
+            Divider(height: 1, color: AppTheme.slate50, indent: 72),
+            _buildSettingItemWithToggle(
+              context,
+              icon: Icons.warning_amber_rounded,
+              iconBg: AppTheme.amber50,
+              iconColor: AppTheme.amber500,
+              title: 'High Interest Alerts',
+              isEnabled: notifPrefs.highInterestAlerts,
+              onToggle: (value) {
+                ref.read(notificationPreferencesProvider.notifier).setHighInterestAlerts(value);
+              },
+              isLast: false,
+            ),
+            Divider(height: 1, color: AppTheme.slate50, indent: 72),
+            _buildSettingItemWithToggle(
+              context,
+              icon: Icons.emoji_events_rounded,
+              iconBg: AppTheme.purple50,
+              iconColor: AppTheme.purple500,
+              title: 'Achievement Rewards',
+              isEnabled: notifPrefs.rewardNotifications,
+              onToggle: (value) {
+                ref.read(notificationPreferencesProvider.notifier).setRewardNotifications(value);
+              },
+              isLast: false,
+            ),
+            Divider(height: 1, color: AppTheme.slate50, indent: 72),
+            _buildSettingItemWithToggle(
+              context,
+              icon: Icons.bar_chart_rounded,
+              iconBg: AppTheme.blue50,
+              iconColor: AppTheme.blue500,
+              title: 'Weekly Summary',
+              isEnabled: notifPrefs.weeklySummary,
+              onToggle: (value) {
+                ref.read(notificationPreferencesProvider.notifier).setWeeklySummary(value);
+              },
+              isLast: true,
+            ),
+          ],
+        ),
       ),
     );
   }

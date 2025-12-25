@@ -31,8 +31,9 @@ dependencies:
   # Local storage for settings
   shared_preferences: ^2.2.3
 
-  # Local notifications (optional for reminders)
+  # Local notifications
   flutter_local_notifications: ^17.2.3
+  timezone: ^0.9.2
 
 dev_dependencies:
   flutter_test:
