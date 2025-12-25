@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
@@ -17,21 +18,26 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  // Period type: 'Monthly' or 'Year'
+  String _periodType = 'Monthly';
+
+  // Selected month and year for navigation
+  late int _selectedMonth;
+  late int _selectedYear;
+
+  @override
+  void initState() {
+    super.initState();
+    final now = DateTime.now();
+    _selectedMonth = now.month;
+    _selectedYear = now.year;
+  }
+
   @override
   Widget build(BuildContext context) {
     final summary = ref.watch(fulizaSummaryProvider);
     final events = ref.watch(fulizaProvider).events;
     final isLoading = ref.watch(fulizaProvider).isLoading;
-    final currentFilter = ref.watch(fulizaFilterProvider);
-
-    final selectedPeriod = switch (currentFilter) {
-      DateFilter.thisWeek => 'All',
-      DateFilter.thisMonth => 'Monthly',
-      DateFilter.thisYear => 'Year',
-      DateFilter.allTime => 'All',
-      DateFilter.custom => 'All',
-    };
-
     final totalEventCount = ref.watch(fulizaProvider).totalEventCount;
     final showEmptyState = totalEventCount == 0;
 
@@ -47,28 +53,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Header
                         _buildHeader(),
-
                         const SizedBox(height: 24),
-
-                        // Usage Tank
                         _buildUsageTank(),
-
                         const SizedBox(height: 24),
-
-                        // Period Selector
-                        _buildPeriodSelector(selectedPeriod),
-
+                        _buildPeriodTypeSelector(),
+                        const SizedBox(height: 12),
+                        _buildPeriodNavigator(),
                         const SizedBox(height: 24),
-
-                        // Graph
-                        _buildGraph(events, selectedPeriod),
-
+                        _buildGraph(events),
                         const SizedBox(height: 24),
-
-                        // Summary Cards
-                        _buildSummaryCards(summary, selectedPeriod, events),
+                        _buildSummaryCards(summary, events),
                       ],
                     ),
                   ),
@@ -136,10 +131,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 decoration: BoxDecoration(
                   color: AppTheme.primaryTeal,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: Colors.white,
-                    width: 2,
-                  ),
+                  border: Border.all(color: Colors.white, width: 2),
                   boxShadow: [
                     BoxShadow(
                       color: AppTheme.primaryTeal.withOpacity(0.3),
@@ -170,7 +162,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _buildUsageTank() {
     final currentLimit = ref.watch(fulizaLimitProvider);
     final summary = ref.watch(fulizaSummaryProvider);
-
     final limit = currentLimit?.limit ?? 5000.0;
     final spent = summary.outstandingBalance;
 
@@ -197,7 +188,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         child: Column(
           children: [
-            // Handle bar
             Container(
               margin: const EdgeInsets.only(top: 12),
               width: 40,
@@ -207,7 +197,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            // Header
             Padding(
               padding: const EdgeInsets.all(24),
               child: Row(
@@ -243,31 +232,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ],
               ),
             ),
-            // Limit history list
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 children: [
-                  _buildLimitHistoryItem(
-                    date: 'Dec 2024',
-                    limit: currentLimit,
-                    isCurrent: true,
-                  ),
-                  _buildLimitHistoryItem(
-                    date: 'Nov 2024',
-                    limit: currentLimit * 0.9,
-                    isCurrent: false,
-                  ),
-                  _buildLimitHistoryItem(
-                    date: 'Oct 2024',
-                    limit: currentLimit * 0.85,
-                    isCurrent: false,
-                  ),
-                  _buildLimitHistoryItem(
-                    date: 'Sep 2024',
-                    limit: currentLimit * 0.8,
-                    isCurrent: false,
-                  ),
+                  _buildLimitHistoryItem(date: 'Dec 2024', limit: currentLimit, isCurrent: true),
+                  _buildLimitHistoryItem(date: 'Nov 2024', limit: currentLimit * 0.9, isCurrent: false),
+                  _buildLimitHistoryItem(date: 'Oct 2024', limit: currentLimit * 0.85, isCurrent: false),
+                  _buildLimitHistoryItem(date: 'Sep 2024', limit: currentLimit * 0.8, isCurrent: false),
                 ],
               ),
             ),
@@ -288,9 +260,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       decoration: BoxDecoration(
         color: isCurrent ? AppTheme.teal500.withOpacity(0.1) : AppTheme.slate800,
         borderRadius: BorderRadius.circular(16),
-        border: isCurrent
-            ? Border.all(color: AppTheme.teal500.withOpacity(0.3))
-            : null,
+        border: isCurrent ? Border.all(color: AppTheme.teal500.withOpacity(0.3)) : null,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -329,35 +299,31 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildPeriodSelector(String selectedPeriod) {
+  /// Period type selector (Monthly / Year)
+  Widget _buildPeriodTypeSelector() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Container(
-        padding: const EdgeInsets.all(6),
+        padding: const EdgeInsets.all(4),
         decoration: BoxDecoration(
           color: AppTheme.slate200.withOpacity(0.5),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(14),
         ),
         child: Row(
-          children: ['All', 'Monthly', 'Year'].map((period) {
-            final isSelected = selectedPeriod == period;
+          children: ['Monthly', 'Year'].map((type) {
+            final isSelected = _periodType == type;
             return Expanded(
               child: GestureDetector(
                 onTap: () {
-                  final filter = period == 'Monthly'
-                      ? DateFilter.thisMonth
-                      : period == 'Year'
-                          ? DateFilter.thisYear
-                          : DateFilter.allTime;
-                  ref.read(fulizaProvider.notifier).setFilter(filter);
+                  HapticFeedback.selectionClick();
+                  setState(() => _periodType = type);
                 },
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
-                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
-                    color:
-                        isSelected ? AppTheme.primaryTeal : Colors.transparent,
-                    borderRadius: BorderRadius.circular(12),
+                    color: isSelected ? AppTheme.primaryTeal : Colors.transparent,
+                    borderRadius: BorderRadius.circular(10),
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
@@ -369,10 +335,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         : null,
                   ),
                   child: Text(
-                    period.toUpperCase(),
+                    type.toUpperCase(),
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: 11,
                       fontWeight: FontWeight.w900,
                       letterSpacing: 1,
                       color: isSelected ? Colors.white : AppTheme.slate400,
@@ -387,9 +353,366 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildGraph(List<FulizaEvent> events, String selectedPeriod) {
-    // Calculate chart data based on events
-    final chartData = _calculateChartData(events, selectedPeriod);
+  /// Period navigator with arrows to go back/forward
+  Widget _buildPeriodNavigator() {
+    final now = DateTime.now();
+    final isCurrentPeriod = _periodType == 'Monthly'
+        ? (_selectedMonth == now.month && _selectedYear == now.year)
+        : (_selectedYear == now.year);
+
+    // Format the display text
+    String periodText;
+    if (_periodType == 'Monthly') {
+      final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      periodText = '${monthNames[_selectedMonth - 1]} $_selectedYear';
+    } else {
+      periodText = '$_selectedYear';
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppTheme.slate900,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.2),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Previous button
+            _buildNavButton(
+              icon: Icons.chevron_left_rounded,
+              onTap: _goToPreviousPeriod,
+            ),
+
+            // Period display with tap to show picker
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _showPeriodPicker(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        periodText,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      if (isCurrentPeriod) ...[
+                        const SizedBox(width: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppTheme.teal500.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'NOW',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                              color: AppTheme.teal400,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ),
+                      ],
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        size: 18,
+                        color: AppTheme.slate400,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Next button (disabled if current period)
+            _buildNavButton(
+              icon: Icons.chevron_right_rounded,
+              onTap: isCurrentPeriod ? null : _goToNextPeriod,
+              disabled: isCurrentPeriod,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavButton({
+    required IconData icon,
+    VoidCallback? onTap,
+    bool disabled = false,
+  }) {
+    return GestureDetector(
+      onTap: disabled ? null : () {
+        HapticFeedback.selectionClick();
+        onTap?.call();
+      },
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: disabled ? Colors.transparent : AppTheme.slate800,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          icon,
+          size: 24,
+          color: disabled ? AppTheme.slate700 : AppTheme.slate300,
+        ),
+      ),
+    );
+  }
+
+  void _goToPreviousPeriod() {
+    setState(() {
+      if (_periodType == 'Monthly') {
+        if (_selectedMonth == 1) {
+          _selectedMonth = 12;
+          _selectedYear--;
+        } else {
+          _selectedMonth--;
+        }
+      } else {
+        _selectedYear--;
+      }
+    });
+  }
+
+  void _goToNextPeriod() {
+    final now = DateTime.now();
+    setState(() {
+      if (_periodType == 'Monthly') {
+        if (_selectedMonth == 12) {
+          if (_selectedYear < now.year) {
+            _selectedMonth = 1;
+            _selectedYear++;
+          }
+        } else {
+          if (_selectedYear < now.year || _selectedMonth < now.month) {
+            _selectedMonth++;
+          }
+        }
+      } else {
+        if (_selectedYear < now.year) {
+          _selectedYear++;
+        }
+      }
+    });
+  }
+
+  void _showPeriodPicker(BuildContext context) {
+    final now = DateTime.now();
+    final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setSheetState) => Container(
+          height: MediaQuery.of(context).size.height * 0.6,
+          decoration: const BoxDecoration(
+            color: AppTheme.slate900,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+          ),
+          child: Column(
+            children: [
+              Container(
+                margin: const EdgeInsets.only(top: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: AppTheme.slate700,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _periodType == 'Monthly' ? 'SELECT MONTH' : 'SELECT YEAR',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        fontStyle: FontStyle.italic,
+                        color: Colors.white,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(Icons.close_rounded, color: AppTheme.slate400),
+                    ),
+                  ],
+                ),
+              ),
+
+              if (_periodType == 'Monthly') ...[
+                // Year selector for monthly view
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton(
+                        onPressed: () {
+                          setSheetState(() => _selectedYear--);
+                        },
+                        icon: const Icon(Icons.chevron_left_rounded, color: AppTheme.slate300),
+                      ),
+                      Text(
+                        '$_selectedYear',
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.white,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: _selectedYear < now.year
+                            ? () {
+                                setSheetState(() => _selectedYear++);
+                              }
+                            : null,
+                        icon: Icon(
+                          Icons.chevron_right_rounded,
+                          color: _selectedYear < now.year ? AppTheme.slate300 : AppTheme.slate700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Month grid
+                Expanded(
+                  child: GridView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 3,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
+                      childAspectRatio: 2,
+                    ),
+                    itemCount: 12,
+                    itemBuilder: (context, index) {
+                      final month = index + 1;
+                      final isSelected = month == _selectedMonth && _selectedYear == _selectedYear;
+                      final isFuture = _selectedYear == now.year && month > now.month;
+                      final isCurrent = month == now.month && _selectedYear == now.year;
+
+                      return GestureDetector(
+                        onTap: isFuture
+                            ? null
+                            : () {
+                                HapticFeedback.selectionClick();
+                                setState(() {
+                                  _selectedMonth = month;
+                                });
+                                setSheetState(() {});
+                                Navigator.pop(context);
+                              },
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppTheme.teal500
+                                : isFuture
+                                    ? AppTheme.slate800.withOpacity(0.3)
+                                    : AppTheme.slate800,
+                            borderRadius: BorderRadius.circular(16),
+                            border: isCurrent && !isSelected
+                                ? Border.all(color: AppTheme.teal500.withOpacity(0.5), width: 2)
+                                : null,
+                          ),
+                          child: Center(
+                            child: Text(
+                              monthNames[index],
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w900,
+                                color: isFuture
+                                    ? AppTheme.slate600
+                                    : isSelected
+                                        ? Colors.white
+                                        : AppTheme.slate300,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ] else ...[
+                // Year list
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    itemCount: 5, // Show last 5 years
+                    itemBuilder: (context, index) {
+                      final year = now.year - index;
+                      final isSelected = year == _selectedYear;
+
+                      return GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() {
+                            _selectedYear = year;
+                          });
+                          Navigator.pop(context);
+                        },
+                        child: Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          padding: const EdgeInsets.symmetric(vertical: 20),
+                          decoration: BoxDecoration(
+                            color: isSelected ? AppTheme.teal500 : AppTheme.slate800,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Center(
+                            child: Text(
+                              '$year',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: isSelected ? Colors.white : AppTheme.slate300,
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+              const SizedBox(height: 24),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildGraph(List<FulizaEvent> events) {
+    final chartData = _calculateChartData(events);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -397,21 +720,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  List<FuliGraphData> _calculateChartData(
-    List<FulizaEvent> events,
-    String selectedPeriod,
-  ) {
-    final now = DateTime.now();
+  List<FuliGraphData> _calculateChartData(List<FulizaEvent> events) {
     final data = <FuliGraphData>[];
 
-    if (selectedPeriod == 'Monthly') {
-      // Current month broken into 4 weeks
-      final monthStart = DateTime(now.year, now.month, 1);
+    if (_periodType == 'Monthly') {
+      // Selected month broken into 4 weeks
+      final monthStart = DateTime(_selectedYear, _selectedMonth, 1);
+      final daysInMonth = DateTime(_selectedYear, _selectedMonth + 1, 0).day;
 
       for (int week = 1; week <= 4; week++) {
         final weekStart = monthStart.add(Duration(days: (week - 1) * 7));
         final weekEnd = week == 4
-            ? DateTime(now.year, now.month + 1, 0, 23, 59, 59) // End of month
+            ? DateTime(_selectedYear, _selectedMonth, daysInMonth, 23, 59, 59)
             : monthStart.add(Duration(days: week * 7 - 1, hours: 23, minutes: 59, seconds: 59));
 
         final weekEvents = events.where((e) =>
@@ -425,13 +745,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           value: total,
         ));
       }
-    } else if (selectedPeriod == 'Year') {
-      // Current year broken into 12 months
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    } else {
+      // Selected year broken into 12 months
+      final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
       for (int i = 0; i < 12; i++) {
-        final monthStart = DateTime(now.year, i + 1, 1);
-        final monthEnd = DateTime(now.year, i + 2, 0, 23, 59, 59);
+        final monthStart = DateTime(_selectedYear, i + 1, 1);
+        final monthEnd = DateTime(_selectedYear, i + 2, 0, 23, 59, 59);
 
         final monthEvents = events.where((e) =>
             e.type == FulizaEventType.interest &&
@@ -440,27 +760,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         final total = monthEvents.fold<double>(0, (sum, e) => sum + e.amount);
 
         data.add(FuliGraphData(
-          label: months[i],
-          value: total,
-        ));
-      }
-    } else {
-      // All time - show last 6 months for context
-      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
-      for (int i = 5; i >= 0; i--) {
-        final targetMonth = DateTime(now.year, now.month - i, 1);
-        final monthStart = DateTime(targetMonth.year, targetMonth.month, 1);
-        final monthEnd = DateTime(targetMonth.year, targetMonth.month + 1, 0, 23, 59, 59);
-
-        final monthEvents = events.where((e) =>
-            e.type == FulizaEventType.interest &&
-            !e.date.isBefore(monthStart) &&
-            !e.date.isAfter(monthEnd));
-        final total = monthEvents.fold<double>(0, (sum, e) => sum + e.amount);
-
-        data.add(FuliGraphData(
-          label: months[targetMonth.month - 1],
+          label: monthNames[i],
           value: total,
         ));
       }
@@ -469,101 +769,115 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     return data;
   }
 
-  Widget _buildSummaryCards(
-    FulizaSummary summary,
-    String selectedPeriod,
-    List<FulizaEvent> events,
-  ) {
+  Widget _buildSummaryCards(FulizaSummary summary, List<FulizaEvent> events) {
     final currencyFormat = NumberFormat.currency(symbol: 'Ksh ', decimalDigits: 2);
+    final monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-    // Format subtitle and repaid label based on period
-    final subtitleText = switch (selectedPeriod) {
-      'Monthly' => 'This Month',
-      'Year' => 'This Year',
-      _ => 'All time',
-    };
+    // Calculate period-specific totals
+    final periodInterest = _calculatePeriodInterest(events);
+    final periodRepaid = _calculatePeriodRepaid(events);
 
-    final repaidLabel = switch (selectedPeriod) {
-      'Monthly' => 'REPAID MONTH',
-      'Year' => 'REPAID YEAR',
-      _ => 'REPAID ALL',
-    };
+    // Format subtitle based on period
+    final subtitleText = _periodType == 'Monthly'
+        ? '${monthNames[_selectedMonth - 1]} $_selectedYear'
+        : '$_selectedYear';
 
-    // Calculate interest comparison
-    final comparison = _calculateInterestComparison(events, selectedPeriod);
+    final repaidLabel = _periodType == 'Monthly' ? 'REPAID' : 'REPAID YEAR';
+
+    // Calculate comparison
+    final comparison = _calculateInterestComparison(events);
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
+      child: Row(
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _SummaryCard(
-                  label: 'INTEREST PAID',
-                  amount: currencyFormat.format(summary.totalInterest),
-                  subtitle: subtitleText,
-                  icon: comparison.isDown ? Icons.trending_down : Icons.trending_up,
-                  iconColor: AppTheme.amber600,
-                  trend: comparison.trend,
-                  trendColor: comparison.isDown ? AppTheme.teal600 : AppTheme.red500,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _SummaryCard(
-                  label: repaidLabel,
-                  amount: currencyFormat.format(summary.totalRepaid),
-                  subtitle: 'View logs',
-                  icon: Icons.arrow_forward,
-                  iconColor: AppTheme.slate400,
-                ),
-              ),
-            ],
+          Expanded(
+            child: _SummaryCard(
+              label: 'INTEREST PAID',
+              amount: currencyFormat.format(periodInterest),
+              subtitle: subtitleText,
+              icon: comparison.isDown ? Icons.trending_down : Icons.trending_up,
+              iconColor: AppTheme.amber600,
+              trend: comparison.trend,
+              trendColor: comparison.isDown ? AppTheme.teal600 : AppTheme.red500,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: _SummaryCard(
+              label: repaidLabel,
+              amount: currencyFormat.format(periodRepaid),
+              subtitle: 'View logs',
+              icon: Icons.arrow_forward,
+              iconColor: AppTheme.slate400,
+            ),
           ),
         ],
       ),
     );
   }
 
-  /// Calculate interest comparison between current and previous period
-  _InterestComparison _calculateInterestComparison(
-    List<FulizaEvent> events,
-    String selectedPeriod,
-  ) {
-    // For "All" period, don't show comparison
-    if (selectedPeriod == 'All') {
-      return _InterestComparison(trend: null, isDown: true);
+  double _calculatePeriodInterest(List<FulizaEvent> events) {
+    DateTime start;
+    DateTime end;
+
+    if (_periodType == 'Monthly') {
+      start = DateTime(_selectedYear, _selectedMonth, 1);
+      end = DateTime(_selectedYear, _selectedMonth + 1, 0, 23, 59, 59);
+    } else {
+      start = DateTime(_selectedYear, 1, 1);
+      end = DateTime(_selectedYear, 12, 31, 23, 59, 59);
     }
 
-    final now = DateTime.now();
+    return events
+        .where((e) =>
+            e.type == FulizaEventType.interest &&
+            !e.date.isBefore(start) &&
+            !e.date.isAfter(end))
+        .fold<double>(0, (sum, e) => sum + e.amount);
+  }
+
+  double _calculatePeriodRepaid(List<FulizaEvent> events) {
+    DateTime start;
+    DateTime end;
+
+    if (_periodType == 'Monthly') {
+      start = DateTime(_selectedYear, _selectedMonth, 1);
+      end = DateTime(_selectedYear, _selectedMonth + 1, 0, 23, 59, 59);
+    } else {
+      start = DateTime(_selectedYear, 1, 1);
+      end = DateTime(_selectedYear, 12, 31, 23, 59, 59);
+    }
+
+    return events
+        .where((e) =>
+            e.type == FulizaEventType.repayment &&
+            !e.date.isBefore(start) &&
+            !e.date.isAfter(end))
+        .fold<double>(0, (sum, e) => sum + e.amount);
+  }
+
+  _InterestComparison _calculateInterestComparison(List<FulizaEvent> events) {
     DateTime currentStart;
     DateTime currentEnd;
     DateTime previousStart;
     DateTime previousEnd;
 
-    switch (selectedPeriod) {
-      case 'Monthly':
-        // Current month
-        currentStart = DateTime(now.year, now.month, 1);
-        currentEnd = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
-        // Previous month
-        previousStart = DateTime(now.year, now.month - 1, 1);
-        previousEnd = DateTime(now.year, now.month, 0, 23, 59, 59);
-        break;
-      case 'Year':
-        // Current year
-        currentStart = DateTime(now.year, 1, 1);
-        currentEnd = DateTime(now.year, 12, 31, 23, 59, 59);
-        // Previous year
-        previousStart = DateTime(now.year - 1, 1, 1);
-        previousEnd = DateTime(now.year - 1, 12, 31, 23, 59, 59);
-        break;
-      default:
-        return _InterestComparison(trend: null, isDown: true);
+    if (_periodType == 'Monthly') {
+      currentStart = DateTime(_selectedYear, _selectedMonth, 1);
+      currentEnd = DateTime(_selectedYear, _selectedMonth + 1, 0, 23, 59, 59);
+      // Previous month
+      final prevMonth = _selectedMonth == 1 ? 12 : _selectedMonth - 1;
+      final prevYear = _selectedMonth == 1 ? _selectedYear - 1 : _selectedYear;
+      previousStart = DateTime(prevYear, prevMonth, 1);
+      previousEnd = DateTime(prevYear, prevMonth + 1, 0, 23, 59, 59);
+    } else {
+      currentStart = DateTime(_selectedYear, 1, 1);
+      currentEnd = DateTime(_selectedYear, 12, 31, 23, 59, 59);
+      previousStart = DateTime(_selectedYear - 1, 1, 1);
+      previousEnd = DateTime(_selectedYear - 1, 12, 31, 23, 59, 59);
     }
 
-    // Calculate current period interest
     final currentInterest = events
         .where((e) =>
             e.type == FulizaEventType.interest &&
@@ -571,7 +885,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             !e.date.isAfter(currentEnd))
         .fold<double>(0, (sum, e) => sum + e.amount);
 
-    // Calculate previous period interest
     final previousInterest = events
         .where((e) =>
             e.type == FulizaEventType.interest &&
@@ -579,7 +892,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             !e.date.isAfter(previousEnd))
         .fold<double>(0, (sum, e) => sum + e.amount);
 
-    // Calculate percentage change
     if (previousInterest == 0) {
       if (currentInterest == 0) {
         return _InterestComparison(trend: 'No change', isDown: true);
@@ -587,8 +899,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return _InterestComparison(trend: 'New', isDown: false);
     }
 
-    final percentChange =
-        ((currentInterest - previousInterest) / previousInterest * 100).abs();
+    final percentChange = ((currentInterest - previousInterest) / previousInterest * 100).abs();
     final isDown = currentInterest <= previousInterest;
 
     return _InterestComparison(
@@ -647,8 +958,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppTheme.primaryTeal,
                 foregroundColor: Colors.white,
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
             ),
           ],
@@ -754,7 +1064,6 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-/// Helper class for interest comparison result
 class _InterestComparison {
   final String? trend;
   final bool isDown;
