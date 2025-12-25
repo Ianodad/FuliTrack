@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/models.dart';
 import '../services/services.dart';
+import '../utils/utils.dart';
 import 'database_provider.dart';
 
 /// State for Fuliza data
@@ -71,8 +72,8 @@ class FulizaNotifier extends StateNotifier<FulizaState> {
 
     try {
       final (start, end) = _getDateRange(state.currentFilter);
-      print('\n📊 Loading data with filter: ${state.currentFilter}');
-      print('   Date range: $start to $end');
+      AppLogger.d('Loading data with filter: ${state.currentFilter}');
+      AppLogger.d('Date range: $start to $end');
 
       // Get total count (regardless of filter) to know if we have any data
       final totalCount = await _db.getEventCount();
@@ -82,29 +83,22 @@ class FulizaNotifier extends StateNotifier<FulizaState> {
           : await _db.getAllEvents();
       final summary = await _db.getSummary(start: start, end: end);
 
-      // Debug: Count events by type
+      // Count events by type
       final loans = events.where((e) => e.type == FulizaEventType.loan).length;
       final interests = events.where((e) => e.type == FulizaEventType.interest).length;
       final repayments = events.where((e) => e.type == FulizaEventType.repayment).length;
 
-      print('   📦 Total events in DB: $totalCount');
-      print('   📦 Filtered events: ${events.length}');
-      print('      - Loans: $loans');
-      print('      - Interests: $interests');
-      print('      - Repayments: $repayments');
-      print('   💰 Summary:');
-      print('      - Total Loaned: ${summary.totalLoaned}');
-      print('      - Total Interest: ${summary.totalInterest}');
-      print('      - Total Repaid: ${summary.totalRepaid}');
-      print('      - Outstanding: ${summary.outstandingBalance}');
+      AppLogger.d('Total events in DB: $totalCount');
+      AppLogger.d('Filtered events: ${events.length}');
+      AppLogger.d('  - Loans: $loans, Interests: $interests, Repayments: $repayments');
+      AppLogger.d('Summary - Loaned: ${summary.totalLoaned}, Interest: ${summary.totalInterest}, Repaid: ${summary.totalRepaid}, Outstanding: ${summary.outstandingBalance}');
 
       // Load limit data
       final currentLimit = await _db.getLatestLimit();
       final limitIncreases = await _db.getLimitIncreases();
 
       if (currentLimit != null) {
-        print('   💳 Current Limit: Ksh ${currentLimit.limit}');
-        print('   📈 Limit Increases: ${limitIncreases.length}');
+        AppLogger.d('Current Limit: Ksh ${currentLimit.limit}, Increases: ${limitIncreases.length}');
       }
 
       state = state.copyWith(
@@ -115,7 +109,8 @@ class FulizaNotifier extends StateNotifier<FulizaState> {
         currentLimit: currentLimit,
         limitIncreases: limitIncreases,
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+      AppLogger.e('Failed to load data', e, stackTrace);
       state = state.copyWith(
         isLoading: false,
         error: 'Failed to load data: $e',
@@ -125,98 +120,86 @@ class FulizaNotifier extends StateNotifier<FulizaState> {
 
   /// Sync SMS messages from device
   Future<int> syncFromSms() async {
-    print('\n========================================');
-    print('🚀 STARTING SMS SYNC');
-    print('========================================\n');
+    AppLogger.i('========================================');
+    AppLogger.i('🚀 STARTING SMS SYNC');
+    AppLogger.i('========================================');
 
     state = state.copyWith(isLoading: true, error: null);
 
     try {
       // Check permission
-      print('🔐 Checking SMS permission...');
+      AppLogger.d('Checking SMS permission...');
       if (!await _smsService.hasPermission()) {
-        print('⚠️  Permission not granted, requesting...');
+        AppLogger.w('Permission not granted, requesting...');
         final granted = await _smsService.requestPermission();
         if (!granted) {
-          print('❌ SMS permission denied by user');
+          AppLogger.e('SMS permission denied by user');
           state = state.copyWith(
             isLoading: false,
             error: 'SMS permission denied',
           );
           return 0;
         }
-        print('✅ Permission granted!');
+        AppLogger.i('Permission granted!');
       } else {
-        print('✅ SMS permission already granted');
+        AppLogger.d('SMS permission already granted');
       }
 
       // Fetch and parse SMS
-      print('\n📱 Fetching Fuliza events from SMS...');
+      AppLogger.d('Fetching Fuliza events from SMS...');
       final events = await _smsService.getFulizaEvents();
-      print('📦 Got ${events.length} events from SMS parser');
+      AppLogger.d('Got ${events.length} events from SMS parser');
 
       if (events.isEmpty) {
-        print('⚠️  No events to insert');
+        AppLogger.w('No events to insert');
         state = state.copyWith(isLoading: false);
         return 0;
       }
 
       // Check how many events are already in database before insert
       final countBefore = await _db.getEventCount();
-      print('📊 Events in database BEFORE insert: $countBefore');
+      AppLogger.d('Events in database BEFORE insert: $countBefore');
 
       // Insert new events (duplicates are ignored)
-      print('\n💾 Inserting ${events.length} events into database...');
+      AppLogger.d('Inserting ${events.length} events into database...');
       await _db.insertEvents(events);
 
       // Check count after insert
       final countAfter = await _db.getEventCount();
-      print('📊 Events in database AFTER insert: $countAfter');
-      print('   New events added: ${countAfter - countBefore}');
+      AppLogger.d('Events in database AFTER insert: $countAfter');
+      AppLogger.d('New events added: ${countAfter - countBefore}');
 
       // Also fetch and insert limit data
-      print('\n📱 Fetching Fuliza limits from SMS...');
+      AppLogger.d('Fetching Fuliza limits from SMS...');
       final limits = await _smsService.getFulizaLimits();
       if (limits.isNotEmpty) {
         final limitCountBefore = await _db.getLimitCount();
         await _db.insertLimits(limits);
         final limitCountAfter = await _db.getLimitCount();
-        print('💳 Limits: Parsed ${limits.length}, Added ${limitCountAfter - limitCountBefore}');
+        AppLogger.d('Limits: Parsed ${limits.length}, Added ${limitCountAfter - limitCountBefore}');
       }
 
       // Reload data with current filter
-      print('\n🔄 Reloading data with filter: ${state.currentFilter}');
+      AppLogger.d('Reloading data with filter: ${state.currentFilter}');
       await loadData();
 
       // If current filter shows no events but database has events, switch to All Time
       if (state.events.isEmpty && countAfter > 0) {
-        print('⚠️  Current filter shows 0 events but DB has $countAfter');
-        print('🔄 Switching to All Time filter...');
+        AppLogger.w('Current filter shows 0 events but DB has $countAfter');
+        AppLogger.d('Switching to All Time filter...');
         state = state.copyWith(currentFilter: DateFilter.allTime);
         await loadData();
       }
 
       // Log final state
-      print('\n📋 Final state:');
-      print('   Events in state: ${state.events.length}');
-      print('   Summary - Loans: ${state.summary.totalLoaned}');
-      print('   Summary - Interest: ${state.summary.totalInterest}');
-
-      print('\n========================================');
-      print('✅ SMS SYNC COMPLETED');
-      print('   Parsed: ${events.length} events');
-      print('   New: ${countAfter - countBefore} events');
-      print('   Total in DB: $countAfter events');
-      print('   Displayed: ${state.events.length} events (filtered by ${state.currentFilter})');
-      print('========================================\n');
+      AppLogger.i('========================================');
+      AppLogger.i('✅ SMS SYNC COMPLETED');
+      AppLogger.i('Parsed: ${events.length} events, New: ${countAfter - countBefore}, Total in DB: $countAfter, Displayed: ${state.events.length}');
+      AppLogger.i('========================================');
 
       return events.length;
     } catch (e, stackTrace) {
-      print('\n========================================');
-      print('❌ SMS SYNC FAILED');
-      print('Error: $e');
-      print('Stack trace: $stackTrace');
-      print('========================================\n');
+      AppLogger.e('SMS SYNC FAILED', e, stackTrace);
 
       state = state.copyWith(
         isLoading: false,

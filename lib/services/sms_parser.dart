@@ -1,3 +1,4 @@
+import '../utils/utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:intl/intl.dart';
 import '../models/models.dart';
@@ -110,15 +111,15 @@ class SmsParser {
       return SmsParseResult.notFuliza();
     }
 
-    debugPrint('  🔍 Parsing Fuliza message...');
+    AppLogger.d('Parsing Fuliza message...');
     final events = <FulizaEvent>[];
     final cleanMessage = _cleanMessage(message);
 
     // Try to match loan with interest pattern
-    debugPrint('  ⚡ Trying loan pattern...');
+    AppLogger.d('Trying loan pattern...');
     final loanMatch = _loanWithInterestPattern.firstMatch(cleanMessage);
     if (loanMatch != null) {
-      debugPrint('  ✅ Matched loan pattern!');
+      AppLogger.d('Matched loan pattern!');
       final reference = loanMatch.group(1)!;
       final loanAmount = _parseAmount(loanMatch.group(2)!);
       final interestAmount = _parseAmount(loanMatch.group(3)!);
@@ -154,10 +155,10 @@ class SmsParser {
     }
 
     // Try to match full repayment pattern
-    debugPrint('  ⚡ Trying full repayment pattern...');
+    AppLogger.d('Trying full repayment pattern...');
     final fullRepayMatch = _fullRepaymentPattern.firstMatch(cleanMessage);
     if (fullRepayMatch != null) {
-      debugPrint('  ✅ Matched full repayment pattern!');
+      AppLogger.d('Matched full repayment pattern!');
       final reference = fullRepayMatch.group(1)!;
       final repaymentAmount = _parseAmount(fullRepayMatch.group(2)!);
       final periodKey = FulizaEvent.generateMonthlyKey(smsDate);
@@ -176,10 +177,10 @@ class SmsParser {
     }
 
     // Try to match partial repayment pattern
-    debugPrint('  ⚡ Trying partial repayment pattern...');
+    AppLogger.d('Trying partial repayment pattern...');
     final partialRepayMatch = _partialRepaymentPattern.firstMatch(cleanMessage);
     if (partialRepayMatch != null) {
-      debugPrint('  ✅ Matched partial repayment pattern!');
+      AppLogger.d('Matched partial repayment pattern!');
       final reference = partialRepayMatch.group(1)!;
       final repaymentAmount = _parseAmount(partialRepayMatch.group(2)!);
       final outstandingAmount = partialRepayMatch.group(3) != null
@@ -206,8 +207,8 @@ class SmsParser {
 
     // Message contains Fuliza but couldn't parse it
     if (events.isEmpty) {
-      debugPrint('  ❌ No pattern matched!');
-      debugPrint('  📝 Message (cleaned): $cleanMessage');
+      AppLogger.d('No pattern matched!');
+      AppLogger.d('Message (cleaned): $cleanMessage');
       return SmsParseResult.error('Could not parse Fuliza message format');
     }
 
@@ -344,7 +345,7 @@ class FulizaLimitParser {
     final increaseMatch = _limitIncreasePattern.firstMatch(cleanMessage);
     if (increaseMatch != null) {
       final limit = _parseAmount(increaseMatch.group(1)!);
-      debugPrint('  ✅ Matched limit increase: Ksh $limit');
+      AppLogger.d('Matched limit increase: Ksh $limit');
       return FulizaLimit(
         type: FulizaLimitType.increase,
         limit: limit,
@@ -358,7 +359,7 @@ class FulizaLimitParser {
     if (fullPayMatch != null) {
       final transactionId = fullPayMatch.group(1)!;
       final limit = _parseAmount(fullPayMatch.group(3)!);
-      debugPrint('  ✅ Matched full payment limit: Ksh $limit ($transactionId)');
+      AppLogger.d('Matched full payment limit: Ksh $limit ($transactionId)');
       return FulizaLimit(
         type: FulizaLimitType.fullPayment,
         limit: limit,
@@ -373,7 +374,7 @@ class FulizaLimitParser {
     if (partialPayMatch != null) {
       final transactionId = partialPayMatch.group(1)!;
       final limit = _parseAmount(partialPayMatch.group(3)!);
-      debugPrint('  ✅ Matched partial payment limit: Ksh $limit ($transactionId)');
+      AppLogger.d('Matched partial payment limit: Ksh $limit ($transactionId)');
       return FulizaLimit(
         type: FulizaLimitType.partialPayment,
         limit: limit,
@@ -387,7 +388,7 @@ class FulizaLimitParser {
     final optInMatch = _optInPattern.firstMatch(cleanMessage);
     if (optInMatch != null) {
       final limit = _parseAmount(optInMatch.group(2)!);
-      debugPrint('  ✅ Matched opt-in limit: Ksh $limit');
+      AppLogger.d('Matched opt-in limit: Ksh $limit');
       return FulizaLimit(
         type: FulizaLimitType.optIn,
         limit: limit,
@@ -404,7 +405,7 @@ class FulizaLimitParser {
     final limits = <FulizaLimit>[];
     final seenLimits = <String>{};
 
-    debugPrint('\n🔍 Parsing Fuliza limit messages...');
+    AppLogger.d('Parsing Fuliza limit messages...');
     int limitMessagesFound = 0;
 
     for (final sms in messages) {
@@ -422,7 +423,7 @@ class FulizaLimitParser {
       }
     }
 
-    debugPrint('✅ Found $limitMessagesFound limit messages, parsed ${limits.length} unique limits');
+    AppLogger.d('Found $limitMessagesFound limit messages, parsed ${limits.length} unique limits');
 
     // Sort by date ascending to calculate previous limits
     limits.sort((a, b) => a.date.compareTo(b.date));

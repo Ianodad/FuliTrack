@@ -1,6 +1,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../models/models.dart';
+import '../utils/utils.dart';
 
 /// Service for managing local SQLite database
 class DatabaseService {
@@ -17,15 +18,22 @@ class DatabaseService {
 
   /// Initialize the database
   Future<Database> _initDatabase() async {
-    final dbPath = await getDatabasesPath();
-    final path = join(dbPath, _dbName);
+    try {
+      final dbPath = await getDatabasesPath();
+      final path = join(dbPath, _dbName);
 
-    return openDatabase(
-      path,
-      version: _dbVersion,
-      onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
-    );
+      AppLogger.d('Initializing database at: $path');
+
+      return await openDatabase(
+        path,
+        version: _dbVersion,
+        onCreate: _onCreate,
+        onUpgrade: _onUpgrade,
+      );
+    } catch (e, stackTrace) {
+      AppLogger.e('Failed to initialize database', e, stackTrace);
+      rethrow;
+    }
   }
 
   /// Create database tables
@@ -129,43 +137,62 @@ class DatabaseService {
 
   /// Insert a new Fuliza event
   Future<int> insertEvent(FulizaEvent event) async {
-    final db = await database;
     try {
+      final db = await database;
       return await db.insert(
         'fuliza_events',
         event.toMap()..remove('id'),
         conflictAlgorithm: ConflictAlgorithm.ignore,
       );
-    } catch (e) {
-      // Likely duplicate reference
+    } on DatabaseException catch (e, stackTrace) {
+      AppLogger.w('Failed to insert event (likely duplicate): ${event.reference}', e);
       return -1;
+    } catch (e, stackTrace) {
+      AppLogger.e('Unexpected error inserting event', e, stackTrace);
+      rethrow;
     }
   }
 
   /// Insert multiple events (batch)
   Future<void> insertEvents(List<FulizaEvent> events) async {
-    final db = await database;
-    final batch = db.batch();
+    try {
+      final db = await database;
+      final batch = db.batch();
 
-    for (final event in events) {
-      batch.insert(
-        'fuliza_events',
-        event.toMap()..remove('id'),
-        conflictAlgorithm: ConflictAlgorithm.ignore,
-      );
+      for (final event in events) {
+        batch.insert(
+          'fuliza_events',
+          event.toMap()..remove('id'),
+          conflictAlgorithm: ConflictAlgorithm.ignore,
+        );
+      }
+
+      await batch.commit(noResult: true);
+    } on DatabaseException catch (e, stackTrace) {
+      AppLogger.e('Failed to insert events batch', e, stackTrace);
+      rethrow;
+    } catch (e, stackTrace) {
+      AppLogger.e('Unexpected error in insertEvents', e, stackTrace);
+      rethrow;
     }
-
-    await batch.commit(noResult: true);
   }
 
   /// Get all Fuliza events
   Future<List<FulizaEvent>> getAllEvents() async {
-    final db = await database;
-    final maps = await db.query(
-      'fuliza_events',
-      orderBy: 'date DESC',
-    );
-    return maps.map((map) => FulizaEvent.fromMap(map)).toList();
+    try {
+      final db = await database;
+      final maps = await db.query(
+        'fuliza_events',
+        orderBy: 'date DESC',
+      );
+      return maps.map((map) => FulizaEvent.fromMap(map)).toList();
+    } on DatabaseException catch (e, stackTrace) {
+      AppLogger.e('Failed to get all events', e, stackTrace);
+      rethrow;
+    } catch (e, stackTrace) {
+      AppLogger.e('Unexpected error in getAllEvents', e, stackTrace);
+      rethrow;
+    }
   }
 
   /// Get events by date range

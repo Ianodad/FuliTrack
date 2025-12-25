@@ -2,6 +2,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import '../models/models.dart';
+import '../utils/utils.dart';
 
 /// Service for managing local notifications
 class NotificationService {
@@ -44,8 +45,7 @@ class NotificationService {
   /// Handle notification tap
   void _onNotificationTapped(NotificationResponse response) {
     // Handle notification tap - could navigate to specific screen
-    // For now, just log it
-    print('Notification tapped: ${response.payload}');
+    AppLogger.d('Notification tapped: ${response.payload}');
   }
 
   /// Request notification permissions (iOS)
