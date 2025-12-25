@@ -539,6 +539,84 @@ class _TappableButtonState extends State<TappableButton>
   }
 }
 
+/// Premium card with radial gradient background
+class GradientCard extends StatelessWidget {
+  final Widget child;
+  final EdgeInsets padding;
+  final double borderRadius;
+  final List<BoxShadow>? boxShadow;
+  final bool showGlow;
+  final Color? glowColor;
+  final Alignment glowPosition;
+
+  const GradientCard({
+    super.key,
+    required this.child,
+    this.padding = const EdgeInsets.all(24),
+    this.borderRadius = 40,
+    this.boxShadow,
+    this.showGlow = false,
+    this.glowColor,
+    this.glowPosition = Alignment.topRight,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: RadialGradient(
+          center: Alignment.center,
+          radius: 1.2,
+          colors: [
+            AppTheme.surfaceDefault,
+            AppTheme.surfaceRecessed.withOpacity(0.8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(borderRadius),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.05),
+          width: 1,
+        ),
+        boxShadow: boxShadow ?? [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Optional glow effect
+          if (showGlow)
+            Positioned(
+              right: glowPosition == Alignment.topRight ? -40 : null,
+              left: glowPosition == Alignment.topLeft ? -40 : null,
+              top: -40,
+              child: Container(
+                width: 128,
+                height: 128,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      (glowColor ?? AppTheme.teal500).withOpacity(0.2),
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          Padding(
+            padding: padding,
+            child: child,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// Gradient header for sections
 class GradientHeader extends StatelessWidget {
   final String title;

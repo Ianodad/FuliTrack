@@ -44,7 +44,80 @@ class AppTheme {
   static const Color slate900 = Color(0xFF0F172A);
   static const Color slate950 = Color(0xFF020617);
 
-  // Semantic colors
+  // ============================================
+  // SEMANTIC COLOR TOKENS
+  // ============================================
+
+  /// Success states - confirmations, completed actions
+  static const Color colorSuccess = Color(0xFF10B981); // emerald-500
+
+  /// Warning states - caution, approaching limits
+  static const Color colorWarning = Color(0xFFF59E0B); // amber-500
+
+  /// Danger states - errors, critical alerts, high risk
+  static const Color colorDanger = Color(0xFFEF4444); // red-500
+
+  /// Info states - informational, neutral highlights
+  static const Color colorInfo = Color(0xFF0EA5E9); // sky-500
+
+  // ============================================
+  // SURFACE COLOR TOKENS (for dark theme)
+  // ============================================
+
+  /// Elevated surface - cards, modals, dropdowns (lighter)
+  static const Color surfaceElevated = Color(0xFF1E293B); // slate-800
+
+  /// Default surface - standard background
+  static const Color surfaceDefault = Color(0xFF0F172A); // slate-900
+
+  /// Recessed surface - inset areas, wells (darker)
+  static const Color surfaceRecessed = Color(0xFF020617); // slate-950
+
+  // ============================================
+  // TEXT COLOR TOKENS (for dark backgrounds)
+  // ============================================
+
+  /// Primary text on dark backgrounds - high contrast
+  static const Color textPrimary = Colors.white;
+
+  /// Secondary text on dark backgrounds - WCAG AA compliant
+  static const Color textSecondary = Color(0xFF94A3B8); // slate-400 (not slate-500!)
+
+  /// Muted/disabled text on dark backgrounds
+  static const Color textMuted = Color(0xFF475569); // slate-600
+
+  // ============================================
+  // GRADIENT DEFINITIONS
+  // ============================================
+
+  /// Primary gradient (teal → amber) - for graphs, progress indicators
+  static const LinearGradient primaryGradient = LinearGradient(
+    colors: [teal400, amber500],
+  );
+
+  /// Success gradient - for positive indicators
+  static const LinearGradient successGradient = LinearGradient(
+    colors: [teal600, emerald400],
+  );
+
+  /// Danger gradient - for high risk indicators
+  static const LinearGradient dangerGradient = LinearGradient(
+    colors: [red600, amber500],
+  );
+
+  /// Card radial gradient - subtle depth effect
+  static BoxDecoration get cardGradientDecoration => BoxDecoration(
+    gradient: RadialGradient(
+      center: Alignment.center,
+      radius: 1.2,
+      colors: [
+        surfaceDefault,
+        surfaceRecessed.withOpacity(0.8),
+      ],
+    ),
+  );
+
+  // Semantic colors (legacy)
   static const Color loanColor = Color(0xFFE57373);
   static const Color interestColor = Color(0xFFFF8A65);
   static const Color repaymentColor = Color(0xFF81C784);

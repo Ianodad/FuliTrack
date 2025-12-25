@@ -128,7 +128,7 @@ class NewRewardsScreen extends ConsumerWidget {
                             style: TextStyle(
                               fontSize: 8,
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.slate500,
+                              color: AppTheme.textSecondary,
                               letterSpacing: 1,
                             ),
                           ),

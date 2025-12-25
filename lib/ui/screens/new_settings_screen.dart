@@ -512,7 +512,7 @@ class NewSettingsScreen extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w900,
-                  color: AppTheme.slate500,
+                  color: AppTheme.textSecondary,
                   letterSpacing: 1,
                 ),
               ),
@@ -557,7 +557,7 @@ class NewSettingsScreen extends ConsumerWidget {
                 style: TextStyle(
                   fontSize: 10,
                   fontWeight: FontWeight.w900,
-                  color: AppTheme.slate500,
+                  color: AppTheme.textSecondary,
                   letterSpacing: 1,
                 ),
               ),

@@ -155,7 +155,7 @@ class _UsageTankState extends State<UsageTank>
                           Text(
                             'LIMIT UTILIZATION',
                             style: AppTheme.labelUppercase.copyWith(
-                              color: AppTheme.slate500,
+                              color: AppTheme.textSecondary,
                               letterSpacing: 2,
                             ),
                           ),
@@ -163,7 +163,7 @@ class _UsageTankState extends State<UsageTank>
                             Icon(
                               Icons.chevron_right_rounded,
                               size: 16,
-                              color: AppTheme.slate500,
+                              color: AppTheme.textSecondary,
                             ),
                         ],
                       ),
@@ -187,7 +187,7 @@ class _UsageTankState extends State<UsageTank>
                             style: const TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.bold,
-                              color: AppTheme.slate500,
+                              color: AppTheme.textSecondary,
                             ),
                           ),
                         ],

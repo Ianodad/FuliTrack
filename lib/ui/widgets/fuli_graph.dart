@@ -223,7 +223,7 @@ class _FuliGraphState extends State<FuliGraph> with SingleTickerProviderStateMix
         child: Text(
           'No data available',
           style: TextStyle(
-            color: AppTheme.slate500,
+            color: AppTheme.textSecondary,
             fontSize: 14,
           ),
         ),
@@ -408,7 +408,7 @@ class _GraphPainter extends CustomPainter {
       } else {
         // Show hollow circles at baseline when no data
         final outerPaint = Paint()
-          ..color = AppTheme.slate500
+          ..color = AppTheme.textSecondary
           ..style = PaintingStyle.stroke
           ..strokeWidth = 2;
         canvas.drawCircle(point, 5, outerPaint);
@@ -431,7 +431,7 @@ class _GraphPainter extends CustomPainter {
       textPainter.text = TextSpan(
         text: data[i].label,
         style: TextStyle(
-          color: isSelected ? AppTheme.teal400 : AppTheme.slate500,
+          color: isSelected ? AppTheme.teal400 : AppTheme.textSecondary,
           fontSize: isSelected ? 10 : 9,
           fontWeight: isSelected ? FontWeight.w900 : FontWeight.bold,
         ),
@@ -476,7 +476,7 @@ class _GraphPainter extends CustomPainter {
       textPainter.text = TextSpan(
         text: label,
         style: const TextStyle(
-          color: AppTheme.slate500,
+          color: AppTheme.textSecondary,
           fontSize: 9,
           fontWeight: FontWeight.bold,
         ),

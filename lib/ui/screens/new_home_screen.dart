@@ -133,7 +133,7 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
                 child: Icon(
                   icon,
                   size: 20,
-                  color: isActive ? AppTheme.teal400 : AppTheme.slate500,
+                  color: isActive ? AppTheme.teal400 : AppTheme.textSecondary,
                 ),
               ),
             ),
@@ -144,7 +144,7 @@ class _NewHomeScreenState extends State<NewHomeScreen> {
                 fontSize: 9,
                 fontWeight: FontWeight.w900,
                 letterSpacing: 1,
-                color: isActive ? AppTheme.teal400 : AppTheme.slate500,
+                color: isActive ? AppTheme.teal400 : AppTheme.textSecondary,
               ),
             ),
           ],
