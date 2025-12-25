@@ -16,7 +16,7 @@ class RewardsScreen extends ConsumerWidget {
       backgroundColor: AppTheme.slate50,
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.only(bottom: 120),
+          padding: const EdgeInsets.only(bottom: 100),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

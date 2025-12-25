@@ -136,7 +136,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen> {
                   );
                 }
                 return ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  padding: const EdgeInsets.only(left: 24, right: 24, bottom: 100),
                   itemCount: filtered.length,
                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                   itemBuilder: (context, index) {

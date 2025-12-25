@@ -40,10 +40,10 @@ class _HomeScreenState extends State<HomeScreen> {
           Positioned(
             left: 32,
             right: 32,
-            bottom: 24,
+            bottom: 12,
             child: Container(
               decoration: BoxDecoration(
-                color: AppTheme.slate900.withOpacity(0.95),
+                color: AppTheme.slate900, // Fully opaque so content doesn't show through
                 borderRadius: BorderRadius.circular(28),
                 border: Border.all(
                   color: Colors.white.withOpacity(0.1),

@@ -54,7 +54,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             : showEmptyState
                 ? _buildEmptyState(context)
                 : SingleChildScrollView(
-                    padding: const EdgeInsets.only(bottom: 120),
+                    padding: const EdgeInsets.only(bottom: 100),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
