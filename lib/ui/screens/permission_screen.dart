@@ -140,6 +140,30 @@ class PermissionScreen extends StatelessWidget {
     );
   }
 
+  /// Check permission status after user returns from app settings
+  Future<void> _checkPermissionAfterSettings(BuildContext context) async {
+    // Wait a bit for settings to close
+    await Future.delayed(const Duration(milliseconds: 500));
+
+    if (!context.mounted) return;
+
+    final status = await Permission.sms.status;
+
+    if (status.isGranted && context.mounted) {
+      onGranted();
+    } else if (context.mounted) {
+      // Still denied, show message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('SMS permission is required to track Fuliza transactions'),
+          backgroundColor: AppTheme.amber600,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
   Future<void> _requestPermission(BuildContext context) async {
     final status = await Permission.sms.request();
 
@@ -189,9 +213,8 @@ class PermissionScreen extends StatelessWidget {
 
       if (shouldRetry == true && context.mounted) {
         await _requestPermission(context);
-      } else {
-        onGranted();
       }
+      // Don't call onGranted() - user denied permission
     } else if (status.isPermanentlyDenied) {
       final shouldOpenSettings = await showDialog<bool>(
         context: context,
@@ -231,10 +254,12 @@ class PermissionScreen extends StatelessWidget {
         ),
       );
 
-      if (shouldOpenSettings == true) {
+      if (shouldOpenSettings == true && context.mounted) {
         await openAppSettings();
+        // After opening settings, check permission again
+        await _checkPermissionAfterSettings(context);
       }
-      onGranted();
+      // Don't call onGranted() - permission was permanently denied
     }
   }
 }
