@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/services.dart';
 import '../models/models.dart';
+import '../utils/app_logger.dart';
+import '../utils/notification_id_manager.dart';
 
 /// Provider for notification service
 final notificationServiceProvider = Provider<NotificationService>((ref) {
@@ -125,14 +127,18 @@ class NotificationHelper {
     if (!_preferences.dueDateReminders) return;
     if (loan.dueDate == null || loan.outstandingBalance == null) return;
 
-    // Use a unique ID based on the loan reference
-    final notificationId = loan.reference.hashCode.abs();
+    try {
+      // Use NotificationIdManager to get a unique, persistent ID for this loan reference
+      final notificationId = await NotificationIdManager.getIdForReference(loan.reference);
 
-    await _notificationService.scheduleDueDateReminder(
-      id: notificationId,
-      dueDate: loan.dueDate!,
-      outstandingAmount: loan.outstandingBalance!,
-    );
+      await _notificationService.scheduleDueDateReminder(
+        id: notificationId,
+        dueDate: loan.dueDate!,
+        outstandingAmount: loan.outstandingBalance!,
+      );
+    } catch (e, stackTrace) {
+      AppLogger.e('Failed to schedule due date reminder', e, stackTrace);
+    }
   }
 
   /// Show reward notification

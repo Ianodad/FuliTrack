@@ -4,6 +4,7 @@ import 'package:timezone/data/latest.dart' as tz;
 import '../models/models.dart';
 import '../ui/theme/app_theme.dart';
 import '../utils/utils.dart';
+import '../utils/notification_id_manager.dart';
 
 /// Service for managing local notifications
 class NotificationService {
@@ -150,8 +151,11 @@ class NotificationService {
       iOS: iosDetails,
     );
 
+    // Get unique notification ID to prevent collisions
+    final notificationId = await NotificationIdManager.getNextId();
+
     await _notifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      notificationId,
       '⚠️ High Interest Charge Detected',
       'Interest of Ksh ${interestAmount.toStringAsFixed(2)} (${interestRate.toStringAsFixed(1)}%) charged on Ksh ${loanAmount.toStringAsFixed(2)} loan',
       details,
@@ -190,8 +194,11 @@ class NotificationService {
       iOS: iosDetails,
     );
 
+    // Get unique notification ID to prevent collisions
+    final notificationId = await NotificationIdManager.getNextId();
+
     await _notifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      notificationId,
       '$emoji $title',
       message,
       details,
@@ -234,8 +241,11 @@ Interest: Ksh ${summary.totalInterest.toStringAsFixed(2)}
 Outstanding: Ksh ${summary.outstandingBalance.toStringAsFixed(2)}
 ''';
 
+    // Get unique notification ID to prevent collisions
+    final notificationId = await NotificationIdManager.getNextId();
+
     await _notifications.show(
-      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      notificationId,
       '📊 Your $period Fuliza Summary',
       message,
       details,
