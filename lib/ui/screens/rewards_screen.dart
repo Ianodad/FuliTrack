@@ -11,6 +11,7 @@ class RewardsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final rewards = ref.watch(rewardProvider).rewards;
+    final badges = _getBadgesList();
 
     return Scaffold(
       backgroundColor: AppTheme.slate50,
@@ -36,7 +37,7 @@ class RewardsScreen extends ConsumerWidget {
               ),
 
               // Progress Card
-              _buildProgressCard(),
+              _buildProgressCard(badges),
 
               const SizedBox(height: 32),
 
@@ -53,7 +54,7 @@ class RewardsScreen extends ConsumerWidget {
               const SizedBox(height: 16),
 
               // Badge Grid
-              _buildBadgeGrid(rewards),
+              _buildBadgeGrid(badges),
             ],
           ),
         ),
@@ -61,8 +62,17 @@ class RewardsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildProgressCard() {
-    const progress = 0.43; // 43% progress
+  Widget _buildProgressCard(List<_BadgeData> badges) {
+    // Calculate dynamic progress based on earned badges
+    final earnedCount = badges.where((b) => b.earned).length;
+    final totalCount = badges.length;
+    final progress = totalCount > 0 ? earnedCount / totalCount : 0.0;
+
+    // Find next unearned badge as milestone
+    final nextBadge = badges.firstWhere(
+      (b) => !b.earned,
+      orElse: () => badges.last, // If all earned, show last badge
+    );
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -146,7 +156,7 @@ class RewardsScreen extends ConsumerWidget {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Text(
-                                'MASTER MILESTONE',
+                                earnedCount == totalCount ? 'ALL COMPLETE!' : 'NEXT MILESTONE',
                                 style: TextStyle(
                                   fontSize: 10,
                                   fontWeight: FontWeight.w900,
@@ -155,16 +165,16 @@ class RewardsScreen extends ConsumerWidget {
                                 ),
                               ),
                               Icon(
-                                Icons.bolt,
+                                earnedCount == totalCount ? Icons.emoji_events : Icons.bolt,
                                 size: 16,
                                 color: AppTheme.amber500,
                               ),
                             ],
                           ),
                           const SizedBox(height: 8),
-                          const Text(
-                            'COST CUTTER II',
-                            style: TextStyle(
+                          Text(
+                            nextBadge.label.toUpperCase(),
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w900,
                               fontStyle: FontStyle.italic,
@@ -174,7 +184,7 @@ class RewardsScreen extends ConsumerWidget {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Reduce Fuliza by 50% this month',
+                            nextBadge.description,
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -194,8 +204,8 @@ class RewardsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildBadgeGrid(List<dynamic> rewards) {
-    final badges = [
+  List<_BadgeData> _getBadgesList() {
+    return [
       // TIER 1: Getting Started
       _BadgeData(
         label: 'Smart Start',
@@ -328,7 +338,9 @@ class RewardsScreen extends ConsumerWidget {
         description: 'Interest below Ksh 50 for 3 consecutive months.',
       ),
     ];
+  }
 
+  Widget _buildBadgeGrid(List<_BadgeData> badges) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: GridView.builder(
