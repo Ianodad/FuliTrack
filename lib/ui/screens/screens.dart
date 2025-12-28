@@ -1,4 +1,5 @@
 // Export all screens from a single file
+export 'splash_screen.dart';
 export 'home_screen.dart';
 export 'dashboard_screen.dart';
 export 'activity_screen.dart';
