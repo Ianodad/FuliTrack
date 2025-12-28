@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import '../../services/analytics_service.dart';
 import '../theme/app_theme.dart';
 import 'dashboard_screen.dart';
 import 'activity_screen.dart';
@@ -23,6 +24,21 @@ class _HomeScreenState extends State<HomeScreen> {
     RewardsScreen(),
     SettingsScreen(),
   ];
+
+  final List<String> _screenNames = const [
+    'Dashboard',
+    'Activity',
+    'Rewards',
+    'Settings',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Track initial screen view and app open
+    analytics.trackAppOpen();
+    analytics.trackNavigation('Dashboard');
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -111,6 +127,8 @@ class _HomeScreenState extends State<HomeScreen> {
         if (_currentIndex != index) {
           HapticFeedback.lightImpact();
           setState(() => _currentIndex = index);
+          // Track screen navigation
+          analytics.trackNavigation(_screenNames[index]);
         }
       },
       behavior: HitTestBehavior.opaque,

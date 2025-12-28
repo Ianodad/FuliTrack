@@ -50,6 +50,13 @@ class SettingsScreen extends ConsumerWidget {
 
               const SizedBox(height: 32),
 
+              // Privacy & Analytics Section
+              _buildSectionHeader('PRIVACY & ANALYTICS', icon: Icons.analytics_outlined),
+              const SizedBox(height: 12),
+              _buildAnalyticsCard(context, ref),
+
+              const SizedBox(height: 32),
+
               // Data Management Section
               _buildSectionHeader('DATA & ENGINE', icon: Icons.storage_rounded),
               const SizedBox(height: 12),
@@ -270,6 +277,369 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildAnalyticsCard(BuildContext context, WidgetRef ref) {
+    final analyticsState = ref.watch(analyticsProvider);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(32),
+          border: Border.all(color: AppTheme.slate100),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            // Privacy info banner
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppTheme.teal50,
+                borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.shield_outlined,
+                    size: 20,
+                    color: AppTheme.teal600,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Your data stays on your device. Analytics are anonymous and optional.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.teal700,
+                        height: 1.3,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _buildSettingItemWithToggle(
+              context,
+              icon: Icons.insights_rounded,
+              iconBg: AppTheme.purple50,
+              iconColor: AppTheme.purple500,
+              title: 'Help Improve FuliTrack',
+              isEnabled: analyticsState.isEnabled,
+              onToggle: (value) {
+                ref.read(analyticsProvider.notifier).setEnabled(value);
+                if (value) {
+                  _showAnalyticsConsentDialog(context, ref);
+                }
+              },
+              isLast: false,
+            ),
+            Divider(height: 1, color: AppTheme.slate50, indent: 72),
+            // What we collect info
+            InkWell(
+              onTap: () => _showPrivacyInfoDialog(context),
+              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(32)),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppTheme.slate50,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(Icons.info_outline_rounded, size: 18, color: AppTheme.slate500),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        'What data is collected?',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppTheme.slate700,
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.chevron_right_rounded,
+                      size: 16,
+                      color: AppTheme.slate300,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showAnalyticsConsentDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppTheme.slate900,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(24),
+        ),
+        title: Row(
+          children: [
+            Icon(Icons.analytics_outlined, color: AppTheme.teal400, size: 24),
+            const SizedBox(width: 12),
+            const Text(
+              'Thank You!',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Your feedback helps us improve FuliTrack for everyone.',
+              style: TextStyle(color: AppTheme.slate300),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.slate800,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'We will NEVER collect:',
+                    style: TextStyle(
+                      color: AppTheme.red400,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _buildPrivacyPoint(Icons.close, 'Your financial data', AppTheme.red400),
+                  _buildPrivacyPoint(Icons.close, 'Phone numbers or names', AppTheme.red400),
+                  _buildPrivacyPoint(Icons.close, 'SMS content', AppTheme.red400),
+                  _buildPrivacyPoint(Icons.close, 'Device identifiers', AppTheme.red400),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.pop(context),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppTheme.teal600,
+            ),
+            child: const Text('Got it'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPrivacyInfoDialog(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: AppTheme.slate900,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Handle bar
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: AppTheme.slate700,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppTheme.teal600.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.privacy_tip_outlined,
+                      color: AppTheme.teal400,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'PRIVACY INFO',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          'What we collect (and don\'t)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.slate400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // What we collect
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.teal600.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.teal600.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'What we collect (if enabled):',
+                      style: TextStyle(
+                        color: AppTheme.teal400,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildPrivacyPoint(Icons.check, 'Which screens you visit', AppTheme.teal400),
+                    _buildPrivacyPoint(Icons.check, 'Which features you use', AppTheme.teal400),
+                    _buildPrivacyPoint(Icons.check, 'App crashes and errors', AppTheme.teal400),
+                    _buildPrivacyPoint(Icons.check, 'General usage patterns', AppTheme.teal400),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // What we DON'T collect
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.red500.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.red500.withOpacity(0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'What we NEVER collect:',
+                      style: TextStyle(
+                        color: AppTheme.red400,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildPrivacyPoint(Icons.close, 'Financial amounts or balances', AppTheme.red400),
+                    _buildPrivacyPoint(Icons.close, 'M-PESA transaction references', AppTheme.red400),
+                    _buildPrivacyPoint(Icons.close, 'Phone numbers or contacts', AppTheme.red400),
+                    _buildPrivacyPoint(Icons.close, 'SMS message content', AppTheme.red400),
+                    _buildPrivacyPoint(Icons.close, 'Device IDs or user IDs', AppTheme.red400),
+                    _buildPrivacyPoint(Icons.close, 'Personal information', AppTheme.red400),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
+              // Close button
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.pop(context),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppTheme.slate700,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                  child: const Text(
+                    'Close',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 8),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPrivacyPoint(IconData icon, String text, Color color) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12,
+                color: AppTheme.slate300,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
