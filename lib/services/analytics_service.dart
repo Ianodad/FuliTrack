@@ -38,9 +38,9 @@ class AnalyticsService {
       await _applyPrivacySettings();
 
       _isInitialized = true;
-      AppLogger.info('Analytics service initialized (enabled: $_isEnabled)');
+      AppLogger.i('Analytics service initialized (enabled: $_isEnabled)');
     } catch (e) {
-      AppLogger.error('Failed to initialize analytics', e);
+      AppLogger.e('Failed to initialize analytics', e);
       // App continues to work without analytics
       _isInitialized = true;
     }
@@ -85,7 +85,7 @@ class AnalyticsService {
       await _analytics!.setAnalyticsCollectionEnabled(enabled);
     }
 
-    AppLogger.info('Analytics ${enabled ? 'enabled' : 'disabled'} by user');
+    AppLogger.i('Analytics ${enabled ? 'enabled' : 'disabled'} by user');
 
     // Track the preference change (if enabling)
     if (enabled) {
@@ -108,9 +108,9 @@ class AnalyticsService {
         parameters: safeParams,
       );
 
-      AppLogger.debug('Analytics event: $eventName');
+      AppLogger.d('Analytics event: $eventName');
     } catch (e) {
-      AppLogger.error('Failed to track event: $eventName', e);
+      AppLogger.e('Failed to track event: $eventName', e);
     }
   }
 
@@ -124,9 +124,9 @@ class AnalyticsService {
         screenClass: screenName,
       );
 
-      AppLogger.debug('Analytics screen: $screenName');
+      AppLogger.d('Analytics screen: $screenName');
     } catch (e) {
-      AppLogger.error('Failed to track screen: $screenName', e);
+      AppLogger.e('Failed to track screen: $screenName', e);
     }
   }
 
