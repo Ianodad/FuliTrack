@@ -1,0 +1,16 @@
+# Android Release Signing Configuration
+#
+# IMPORTANT: DO NOT commit this file to version control!
+# Copy this file to 'key.properties' and fill in your actual values.
+#
+# Steps to create your keystore:
+# 1. Run: keytool -genkey -v -keystore ~/fulitrack-release-key.jks \
+#         -keyalg RSA -keysize 2048 -validity 10000 -alias fulitrack
+# 2. Follow the prompts to set passwords and details
+# 3. Store the keystore file in a secure location
+# 4. Fill in the values below with your keystore information
+
+storePassword=YOUR_KEYSTORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=fulitrack
+storeFile=/path/to/your/fulitrack-release-key.jks

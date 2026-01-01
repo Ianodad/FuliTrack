@@ -1,4 +1,4 @@
-package com.example.fulitrack
+package com.fulitrack.app
 
 import io.flutter.embedding.android.FlutterActivity
 
