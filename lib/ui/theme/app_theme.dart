@@ -7,6 +7,7 @@ class AppTheme {
   static const Color teal400 = Color(0xFF2dd4bf);
   static const Color teal500 = Color(0xFF14b8a6);
   static const Color teal600 = Color(0xFF0d9488);
+  static const Color teal700 = Color(0xFF0f766e);
   static const Color teal50 = Color(0xFFF0FDFA);
   static const Color teal100 = Color(0xFFCCFBF1);
   static const Color teal800 = Color(0xFF115E59);
@@ -27,6 +28,7 @@ class AppTheme {
 
   // Error and success
   static const Color errorRed = Color(0xFFEF4444);
+  static const Color red400 = Color(0xFFF87171);
   static const Color red500 = Color(0xFFEF4444);
   static const Color red600 = Color(0xFFDC2626);
   static const Color successGreen = Color(0xFF10B981);

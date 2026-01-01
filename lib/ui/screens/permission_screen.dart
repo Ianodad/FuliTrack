@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+import '../../services/analytics_service.dart';
 import '../theme/app_theme.dart';
 
 /// Permission screen with premium dark theme for requesting SMS access
@@ -150,6 +151,8 @@ class PermissionScreen extends StatelessWidget {
     final status = await Permission.sms.status;
 
     if (status.isGranted && context.mounted) {
+      // Track permission granted
+      analytics.trackPermissionGranted('sms');
       onGranted();
     } else if (context.mounted) {
       // Still denied, show message
@@ -170,6 +173,8 @@ class PermissionScreen extends StatelessWidget {
     if (!context.mounted) return;
 
     if (status.isGranted) {
+      // Track permission granted
+      analytics.trackPermissionGranted('sms');
       onGranted();
     } else if (status.isDenied) {
       final shouldRetry = await showDialog<bool>(

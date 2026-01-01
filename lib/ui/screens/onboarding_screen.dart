@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../services/analytics_service.dart';
 import '../theme/app_theme.dart';
 
 /// Onboarding screen with premium dark theme design
@@ -70,6 +71,8 @@ class _OnboardingScreenState extends State<OnboardingScreen>
         curve: Curves.easeOutCubic,
       );
     } else {
+      // Track onboarding completion
+      analytics.trackOnboardingCompleted();
       widget.onComplete();
     }
   }

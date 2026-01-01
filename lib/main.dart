@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'services/analytics_service.dart';
 import 'ui/theme/app_theme.dart';
 import 'ui/screens/screens.dart';
 
@@ -21,6 +22,9 @@ void main() async {
       statusBarIconBrightness: Brightness.dark,
     ),
   );
+
+  // Initialize Firebase Analytics (privacy-configured)
+  await analytics.initialize();
 
   runApp(const ProviderScope(child: FuliTrackApp()));
 }
