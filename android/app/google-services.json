@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "445600855714",
+    "project_id": "fulitrack-a6c1e",
+    "storage_bucket": "fulitrack-a6c1e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:445600855714:android:abced39e6ff9a5248689fb",
+        "android_client_info": {
+          "package_name": "com.fulitrack.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDAMlZ37vqNtm_GJLPxJ0WoU6fWYcPUTCc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
